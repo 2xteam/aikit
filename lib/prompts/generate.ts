@@ -129,7 +129,14 @@ export async function analyzePhotos(images: ImageInput[]): Promise<unknown> {
 
   const content: unknown[] = [{ type: "text", text: analyzeUserText(images.length) }];
   for (const img of images) {
-    content.push({ type: "image_url", image_url: { url: toDataUrl(img), detail: "low" } });
+    /*
+      ⚠️ **`high` 여야 한다.** 예전 스키마(장면·조명 같은 거친 분류)에서는 `low` 로도
+      결과가 같아서 토큰을 아꼈는데, 지금은 **옷의 로고가 어디에 붙었는지, 신발
+      밑창과 끈이 무슨 색인지**까지 읽어야 한다. `low` 는 512px 로 줄여 보내므로
+      그 정밀도가 나오지 않는다 (2026-09-18 기획 정정).
+      한 장에 토큰이 755 → 1,435 로 는다. 이 앱이 파는 것이 그 정밀도다.
+    */
+    content.push({ type: "image_url", image_url: { url: toDataUrl(img), detail: "high" } });
   }
 
   const raw = await callJson(
@@ -170,11 +177,39 @@ function readResult(raw: unknown): ComposeResult {
 }
 
 /**
- * A-2. **리소스 셋을 합친다** — 기초 프롬프트 + 사진 태그 + 사용자 문구 + 비율.
+ * 결과를 **검사한다.** 없으면 안 되는 것이 빠졌는지 본다.
+ *
+ * 왜 검사하는가 — 프롬프트가 길어지면서 모델이 출력 계약을 흘리는 일이 실제로
+ * 있었다 (2026-09-18: 절 구조를 통째로 무시하고 기초 프롬프트를 베꼈다).
+ * **신원 고정이 빠진 프롬프트는 이 앱에서 쓸모가 없다** — 닮은 남이 나온다.
+ * 조용히 건네지 말고 한 번 다시 시켠다.
+ *
+ * @returns 빠진 것들. 비어 있으면 통과
+ */
+function auditPrompt(prompt: string, ratio: string): string[] {
+  const missing: string[] = [];
+  if (!/^\s*DO NOT\b/im.test(prompt)) missing.push("the DO NOT block");
+  if (!/do not generate a new face/i.test(prompt)) {
+    missing.push('the identity lock line "do not generate a new face"');
+  }
+  if (!/do not (restyle|beautify)/i.test(prompt)) {
+    missing.push("the no-restyle / no-beautify instruction");
+  }
+  /* 사용자가 고른 비율. 이게 없으면 쓸 곳에 맞지 않는 구도가 나온다 */
+  if (!prompt.includes(ratio)) missing.push(`the aspect ratio "${ratio}"`);
+  return missing;
+}
+
+/**
+ * A-2. **기초 프롬프트에 사진의 피사체를 얹는다** (2026-09-18 기획 정정).
+ *
+ * BASE 는 장면·조명·색·카메라·자세를, PHOTO 는 피사체의 생김새를 준다.
+ * 사진 속 인물이 BASE 의 자세를 취한 모습이 결과다.
  */
 export async function composePrompt(input: {
   base: string;
-  tags: unknown;
+  /** A-1 이 뽑은 **피사체 서술**. 장면·조명·색은 들어 있지 않다 (2026-09-18 기획 정정) */
+  photo: unknown;
   request: string;
   ratio: string;
   moodKo: string;
@@ -186,24 +221,48 @@ export async function composePrompt(input: {
     "BASE:",
     input.base,
     "",
-    "TAGS:",
-    JSON.stringify(input.tags),
+    "PHOTO:",
+    JSON.stringify(input.photo),
     "",
     "REQUEST:",
     input.request || "(사용자가 따로 적지 않았어요. 사진에 맞게 알아서 맞춰 주세요.)",
   ].join("\n");
 
-  return readResult(
-    await callJson(
-      TEXT_MODEL(),
-      [
-        { role: "system", content: fillMaxChars(COMPOSE_SYSTEM) },
-        { role: "user", content: user },
-      ],
-      /* 문장을 쓰는 일이라 0 은 너무 뻣뻣하다. 볼트의 A-2 와 같은 값 */
-      0.4,
-    ),
-  );
+  const messages: Msg[] = [
+    { role: "system", content: fillMaxChars(COMPOSE_SYSTEM) },
+    { role: "user", content: user },
+  ];
+
+  /* 문장을 쓰는 일이라 0 은 너무 뻣뻣하다. 볼트의 A-2 와 같은 값 */
+  let out = readResult(await callJson(TEXT_MODEL(), messages, 0.4));
+
+  const missing = auditPrompt(out.prompt, input.ratio);
+  if (missing.length > 0) {
+    console.warn("[openai] 합성 결과에 빠진 것:", missing.join(" · "));
+    /*
+      한 번만 다시 시킨다. 두 번 해서 안 되면 모델이나 프롬프트를 봐야 하는
+      일이고, 사용자를 세 번 기다리게 할 값은 없다.
+    */
+    out = readResult(
+      await callJson(
+        TEXT_MODEL(),
+        [
+          ...messages,
+          {
+            role: "user",
+            content:
+              `Your previous answer was missing ${missing.join(", ")}. ` +
+              `Write it again, complete this time. Keep every required header.`,
+          },
+        ],
+        0.4,
+      ),
+    );
+    const still = auditPrompt(out.prompt, input.ratio);
+    if (still.length > 0) console.warn("[openai] 재시도 후에도 빠짐:", still.join(" · "));
+  }
+
+  return out;
 }
 
 /** A-3. 다듬기 — 직전 버전과 요청문을 함께 보낸다. 화면은 목록이지만 내용은 대화다 */

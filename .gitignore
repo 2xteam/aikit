@@ -41,3 +41,11 @@ certificates
 
 # 프롬프트 원본 캐시 — 133MB. 스크립트가 다시 받는다
 .cache/
+
+# Next 가 만드는 파일 — **매번 바뀐다.**
+#
+# 안에 마지막으로 돈 distDir 경로가 박히므로 `npm run dev`(.next) 와
+# `npm run dev:verify`(.next-verify) 를 오갈 때마다 diff 가 생긴다.
+# "This file should not be edited" 라고 스스로 적어 두는 생성 파일이라 뺀다.
+# (myjane · 2hbk 도 같다. typelog · fitlog · SnapWord 는 추적 중이라 그 churn 을 안고 있다)
+next-env.d.ts

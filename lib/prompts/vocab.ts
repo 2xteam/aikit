@@ -49,56 +49,65 @@ export function isMoodId(v: unknown): v is MoodId {
   return typeof v === "string" && MOOD_IDS.includes(v as MoodId);
 }
 
-/* ─────────────────────── 사진 태그 — A-1 이 뱉고 라이브러리가 받는다 ─────────────────────── */
+/* ─────────────────────── 사진에서 뽑는 것 — **피사체만** ─────────────────────── */
 
 /**
- * A-1 시스템 프롬프트의 "값 후보" 표와 **같은 목록**이다.
- * 이 객체에서 표를 만들어 프롬프트에 끼워 넣는다 → lib/prompts/system/analyze.ts
+ * ⚠️ **2026-09-18 기획 정정.** 전에는 장면·조명·색·구도까지 뽑았다.
+ *
+ * 그게 문제였다 — 기초 프롬프트가 이미 장면과 분위기를 정해 두는데 사진에서도
+ * 같은 것을 뽑아 오니 **둘이 경쟁해서 논점이 흐려졌다.** 결과가 이도 저도 아니게 된다.
+ *
+ * 이제 역할을 자른다.
+ *
+ * | | 누가 정하나 |
+ * |---|---|
+ * | 장면 · 조명 · 색 · 구도 · 카메라 · **자세** | **기초 프롬프트** |
+ * | 피사체의 생김새 — 얼굴 · 머리 · 장신구 · 옷 · 로고 · 신발 | **사진** (그대로 옮긴다) |
+ *
+ * 사진에서 뽑는 것은 **피사체의 생김새와 화면 속 문자**뿐이다.
  */
-export const TAG_VOCAB = {
-  framing: ["full_body", "half", "close_up", "wide", "object_only", "none"],
-  place: ["street", "indoor", "nature", "gym", "stadium", "cafe", "studio", "other"],
-  time_of_day: ["day", "golden_hour", "night", "unknown"],
-  light_source: ["natural", "flash", "streetlight", "indoor", "mixed", "unknown"],
-  contrast: ["high", "medium", "low"],
-  color_mood: ["warm", "cool", "neutral"],
+
+/** 피사체의 종류 */
+export const SUBJECT_KINDS = ["person", "animal", "object", "product", "scene_element"] as const;
+
+/**
+ * ⚠️ `cautions` 는 분석용이 아니라 **제품 동작에 쓰인다.**
+ *
+ *   multiple_people · possible_bystander → 공유 화면의 제3자 동의 문장을 강조
+ *   possible_minor                       → 공유 체크박스를 잠근다
+ *   private_document                     → 업로드 단계에서 경고
+ *   low_quality                          → 다시 찍으라고 안내
+ *
+ * ⚠️ **법적 판단으로 쓰지 않는다.** 모델이 틀린다. 한 번 더 묻는 트리거일 뿐이고
+ * 동의 책임은 사용자에게 있다.
+ */
+export const CAUTIONS = [
+  "identifiable_face",
+  "multiple_people",
+  "possible_bystander",
+  "possible_minor",
+  "private_document",
+  "low_quality",
+] as const;
+
+/** A-1 프롬프트에 끼워 넣을 값 후보. 표를 손으로 베끼지 않는다 */
+export function renderPhotoVocab(): string {
+  return [
+    `subject kind: ${SUBJECT_KINDS.join(" | ")}`,
+    `cautions: ${CAUTIONS.join(" | ")}`,
+  ].join("\n");
+}
+
+/**
+ * 라이브러리 쪽 태그 어휘 — **원본 데이터셋에서 온 것**이고 A-1 과 무관하다.
+ * `prompts.tags` 가 이 값을 쓴다. 사진 분석과 맞물릴 일이 없어졌으므로
+ * 더는 "같은 어휘를 봐야 한다" 는 제약이 없다.
+ */
+export const LIBRARY_TAG_VOCAB = {
   suitable_for: ["poster", "portrait", "social_card", "thumbnail", "product", "illustration"],
-  /**
-   * ⚠️ `cautions` 는 분석용이 아니라 **제품 동작에 쓰인다.**
-   *
-   *   multiple_people · possible_bystander → 공유 화면의 제3자 동의 문장을 강조
-   *   possible_minor                       → 공유 체크박스를 잠근다
-   *   private_document                     → 업로드 단계에서 경고
-   *   low_quality                          → 다시 찍으라고 안내
-   *
-   * ⚠️ **법적 판단으로 쓰지 않는다.** 모델이 틀린다. 한 번 더 묻는 트리거일 뿐이고
-   * 동의 책임은 사용자에게 있다.
-   */
-  cautions: [
-    "identifiable_face",
-    "multiple_people",
-    "possible_bystander",
-    "possible_minor",
-    "private_document",
-    "low_quality",
-  ],
+  framing: ["full_body", "half", "close_up", "wide", "object_only"],
+  time_of_day: ["day", "golden_hour", "night"],
 } as const;
-
-export type TagVocabKey = keyof typeof TAG_VOCAB;
-
-/** A-1 프롬프트에 끼워 넣을 "값 후보" 블록을 만든다. 표를 손으로 베끼지 않는다 */
-export function renderTagVocab(): string {
-  return (Object.keys(TAG_VOCAB) as TagVocabKey[])
-    .map((k) => `${k}: ${TAG_VOCAB[k].join(" | ")}`)
-    .join("\n");
-}
-
-/** 모델이 어휘 밖의 값을 뱉으면 버린다. 억지로 맞추지 않는다 */
-export function keepKnown<K extends TagVocabKey>(key: K, values: unknown): string[] {
-  if (!Array.isArray(values)) return [];
-  const allowed = TAG_VOCAB[key] as readonly string[];
-  return values.filter((v): v is string => typeof v === "string" && allowed.includes(v));
-}
 
 /* ───────────────────────────── 원본 데이터셋의 category ───────────────────────────── */
 

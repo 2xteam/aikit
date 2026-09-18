@@ -109,10 +109,15 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
         });
       }
 
-      const tags = await analyzePhotos(inputs);
+      /*
+        ⚠️ 여기서 뽑는 것은 **피사체뿐**이다. 장면·조명·색·구도는 기초 프롬프트가
+        갖는다 — 둘이 경쟁하면 논점이 흐려진다 (2026-09-18 기획 정정)
+        → lib/prompts/system.ts
+      */
+      const photo = await analyzePhotos(inputs);
       result = await composePrompt({
         base: base.body,
-        tags,
+        photo,
         request,
         ratio,
         moodKo: moodLabel(base.mood ?? ""),
