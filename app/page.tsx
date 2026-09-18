@@ -36,12 +36,12 @@ export default function LandingPage() {
           eyebrow="AIKIT · PROMPT LOG"
           headline={
             <>
-              이미지는 남는데,
+              사진을 올리면
               <br />
-              <span style={{ color: "#ead58c" }}>어떻게 만들었는지가 사라져요.</span>
+              <span style={{ color: "#ead58c" }}>프롬프트를 만들어 드려요.</span>
             </>
           }
-          lead="어떤 사진을 넣었는지, 무슨 프롬프트를 썼는지가 대화 기록 속에 흩어집니다. AIKit 은 그 셋을 한 묶음으로 붙들어 둡니다."
+          lead="어떤 느낌이면 좋겠는지만 한 줄 적으면 됩니다. 만든 프롬프트와 그걸로 나온 이미지가 한 묶음으로 남아, 두 달 뒤에도 그대로 다시 씁니다."
         >
           <div style={{ marginTop: 24 }}>
             <LandingCta variant="hero" />
@@ -88,11 +88,12 @@ export default function LandingPage() {
           tone="tint"
           eyebrow="PRIVACY"
           headline="올린 이미지는 기본이 비공개예요"
-          lead="앱 안에서, 본인에게만 보입니다. 나누고 싶은 이미지는 하나씩 골라 동의한 뒤에만 링크가 만들어져요."
+          lead="앱 안에서, 본인에게만 보입니다. 이미지 주소를 밖으로 내보내지 않고 앱이 직접 보여 줘요."
         >
           <p className="note-block">
             <strong>NOTE</strong>
-            공유를 끄면 그 즉시 링크가 닫힙니다. 이미지 주소를 밖으로 흘리지 않기 때문이에요.
+            프롬프트를 만들 때는 올린 사진이 OpenAI 로 한 번 전송돼요. 분석에만 쓰이고,
+            사진은 이 앱의 저장소에만 남습니다.
           </p>
         </Sheet>
 
@@ -108,7 +109,7 @@ export default function LandingPage() {
           </p>
         </Sheet>
 
-        <Sheet center point eyebrow="START" headline="묶음 하나만 만들어 볼까요?">
+        <Sheet center point eyebrow="START" headline="사진 한 장으로 시작해 볼까요?">
           <div style={{ display: "flex", justifyContent: "center", marginTop: 18 }}>
             <LandingCta variant="closing" />
           </div>
@@ -156,35 +157,39 @@ export default function LandingPage() {
 
 const STEPS = [
   {
-    title: "사진과 프롬프트를 넣는다",
-    desc: "쓰려는 원본 사진을 올리고, 어떤 문장을 쓸지 적습니다. 묶음 하나가 채팅창 하나예요.",
+    title: "사진과 분위기를 넣는다",
+    desc: "쓰려는 사진을 올리고 “어떤 느낌이면 좋겠는지”만 한 줄 적어요. 긴 문장은 필요 없어요.",
   },
   {
-    title: "쓰던 AI에서 만든다",
-    desc: "프롬프트를 복사해 ChatGPT·Gemini 어디서든 만듭니다. 이미지는 이 앱이 만들지 않아요.",
+    title: "프롬프트를 받는다",
+    desc: "사진에 어울리는 프롬프트를 만들어 드려요. 어떤 이미지가 나올지 요약도 함께 보여 줘요.",
   },
   {
-    title: "결과를 되가져온다",
-    desc: "만든 이미지를 그 묶음에 올려 둡니다. 입력·프롬프트·결과가 한 화면에 남습니다.",
+    title: "복사해서 만들고, 결과를 올린다",
+    desc: "쓰던 AI에 붙여 넣어 만든 뒤 그 이미지를 이 묶음에 올려 둬요. 이미지는 이 앱이 만들지 않아요.",
   },
 ];
 
 const FEATURES = [
   {
-    name: "한 화면에 셋이 함께",
-    desc: "넣은 사진, 쓴 프롬프트, 받은 이미지를 한 묶음으로 봅니다. 어느 하나만 남기지 않아요.",
+    name: "사진을 보고 만든 프롬프트",
+    desc: "올린 사진의 인물·배경·빛을 읽어 그 사진에 맞는 문장을 만들어요. 빈 칸에서 시작하지 않아요.",
   },
   {
-    name: "프롬프트 복사",
-    desc: "긴 프롬프트도 한 번에 복사합니다. 쓰던 AI가 어디든 그대로 붙여 넣으면 돼요.",
+    name: "어떤 이미지가 나올지 먼저 요약",
+    desc: "프롬프트와 함께 결과가 어떤 분위기일지 한 문단으로 보여 줘요. 만들기 전에 판단할 수 있어요.",
   },
   {
-    name: "원본 다운로드",
-    desc: "넣었던 사진을 다시 받아 그쪽 앱에 올립니다. 이미지 주소를 밖으로 내보내지 않는 대신이에요.",
+    name: "마음에 안 들면 고쳐 달라고",
+    desc: "“더 밝게”, “포스터 말고 인물사진으로”처럼 적으면 다시 만들어 드려요. 요청과 결과가 순서대로 쌓여요.",
   },
   {
-    name: "고쳐 쓴 프롬프트도 함께",
-    desc: "같은 사진으로 문장을 두세 번 고쳤다면 그 과정도 한 묶음에 남습니다.",
+    name: "프롬프트 한 번에 복사",
+    desc: "긴 프롬프트도 버튼 하나로 복사해요. 쓰던 AI가 어디든 그대로 붙여 넣으면 됩니다.",
+  },
+  {
+    name: "결과 이미지를 그 프롬프트 아래에",
+    desc: "만든 이미지를 어느 프롬프트로 만들었는지와 함께 올려 둬요. 두 달 뒤에도 짝이 맞아요.",
   },
   {
     name: "묶음 단위 삭제",
