@@ -115,3 +115,65 @@ export function keepKnown<K extends TagVocabKey>(key: K, values: unknown): strin
  * 그래서 실제로 거르는 축은 **태그와 mood 자동 분류**다 → scripts/prompts-filter.mjs
  */
 export const SOURCE_CATEGORIES = ["Content Creation", "Entertainment", "Commercial"] as const;
+
+/* ─────────────────────────────── 생성 비율 ─────────────────────────────── */
+
+/**
+ * 만들 이미지의 가로세로비 — **사용자가 UI 에서 고른다** (2026-09-18 사용자 지정).
+ *
+ * 왜 자동으로 정하지 않는가 — 같은 사진으로도 인스타 피드(4:5)와 스토리(9:16)는
+ * 완전히 다른 구도를 요구한다. 원본 사진의 비율에서 유추하면 **거의 틀린다.**
+ * 쓸 곳을 아는 것은 사용자뿐이다.
+ *
+ * 프롬프트에는 지식베이스의 여덟 토막 골격 중 **8절(OUTPUT)** 로 들어간다
+ * (`vars` 의 `{RATIO}`). 기초 프롬프트에 박힌 비율이 있어도 **사용자 선택이 이긴다.**
+ *
+ * `hint` 는 칩 아래 작은 글씨다. 숫자만 보여 주면 무엇에 쓰는지 모른다.
+ *
+ * → my-obsidian-vault / 30-Patterns/프롬프트 지식베이스.md "바꿔 끼우는 자리"
+ */
+export const RATIOS = [
+  { id: "4:5", ko: "세로 4:5", hint: "인스타 피드 · 포스터", value: 0.8 },
+  { id: "9:16", ko: "세로 9:16", hint: "스토리 · 릴스 · 쇼츠", value: 0.5625 },
+  { id: "1:1", ko: "정사각 1:1", hint: "프로필 · 썸네일", value: 1 },
+  { id: "3:2", ko: "가로 3:2", hint: "사진 기본 · 블로그", value: 1.5 },
+  { id: "16:9", ko: "가로 16:9", hint: "유튜브 · 배너 · 발표자료", value: 1.7778 },
+] as const;
+
+export type RatioId = (typeof RATIOS)[number]["id"];
+
+/**
+ * 기본값은 **세로 4:5**.
+ *
+ * 원본 데이터셋 27,549건의 비율 분포가 세로 19,573 · 정사각 4,259 · 가로 3,717 로
+ * 세로가 압도적이었다(2026-09-18 실측). 기초 프롬프트 대부분이 세로 구도를
+ * 전제로 쓰여 있다는 뜻이라, 기본값을 세로로 두는 쪽이 덜 어긋난다.
+ */
+export const DEFAULT_RATIO: RatioId = "4:5";
+
+export function isRatioId(v: unknown): v is RatioId {
+  return typeof v === "string" && RATIOS.some((r) => r.id === v);
+}
+
+export function ratioLabel(id: string): string {
+  return RATIOS.find((r) => r.id === id)?.ko ?? id;
+}
+
+/**
+ * 원본의 숫자 비율(1.49 · 0.56 …)을 가장 가까운 칩으로 옮긴다.
+ * 라이브러리 카드에 "이 프롬프트는 원래 세로용" 을 보여 주는 데 쓴다.
+ * **사용자의 선택을 덮지 않는다** — 참고 표시일 뿐이다.
+ */
+export function nearestRatio(value: number | null | undefined): RatioId | null {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) return null;
+  let best: RatioId | null = null;
+  let bestGap = Infinity;
+  for (const r of RATIOS) {
+    const gap = Math.abs(Math.log(value) - Math.log(r.value));
+    if (gap < bestGap) {
+      bestGap = gap;
+      best = r.id;
+    }
+  }
+  return best;
+}

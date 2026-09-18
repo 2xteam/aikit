@@ -47,6 +47,14 @@ export type LogPromptDocument = {
   basePromptId: Types.ObjectId | null;
   /** 고른 분위기. basePromptId 를 지워도 무엇을 골랐는지는 남는다 */
   mood: string;
+  /**
+   * 사용자가 UI 에서 고른 가로세로비 (`4:5` · `9:16` · `1:1` · `3:2` · `16:9`).
+   *
+   * 프롬프트의 OUTPUT 절로 들어간다. **기초 프롬프트에 박힌 비율보다 이게 이긴다** —
+   * 어디에 쓸지는 사용자만 안다. 버전마다 남기므로 "세로로 뽑았다가 가로로 다시
+   * 뽑은" 기록이 그대로 보인다 → lib/prompts/vocab.ts RATIOS
+   */
+  ratio: string;
   /** 생성된 프롬프트 본문. 복사 버튼이 집어 가는 값 */
   text: string;
   /** 어떤 이미지가 나올지 한 문단. 만들기 전에 판단하라고 준다 */
@@ -76,6 +84,7 @@ const LogPromptSchema = new Schema<LogPromptDocument>(
     */
     basePromptId: { type: Schema.Types.ObjectId, default: null },
     mood: { type: String, default: "" },
+    ratio: { type: String, default: "4:5" },
     text: { type: String, required: true },
     summary: { type: String, default: "" },
     parentVersion: { type: Number, default: null },

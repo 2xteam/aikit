@@ -108,10 +108,11 @@ try {
   console.log(`\n컬렉션 (${DB_NAME})`);
   if (!existing.length) {
     console.log(
-      `  (없음) — Atlas 에 "${DB_NAME}" DB 가 아직 없거나 비어 있습니다.\n` +
-        `    Atlas 는 빈 DB 를 만들 수 없으니, Create Database 로\n` +
-        `    DB "${DB_NAME}" + 컬렉션 "quizzes" 를 함께 만들어 주세요.\n` +
-        `    나머지 컬렉션과 인덱스는 --ensure 나 첫 쓰기에 생깁니다.`,
+      `  (없음) — "${DB_NAME}" DB 가 아직 없거나 비어 있습니다.
+` +
+        `    Atlas 는 빈 DB 를 만들 수 없지만, 첫 쓰기에 저절로 생깁니다.
+` +
+        `    프롬프트 라이브러리를 넣으려면:  npm run prompts:ingest -- --write`,
     );
   }
 
