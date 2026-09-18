@@ -38,3 +38,6 @@ yarn-error.log*
 
 certificates
 .vercel
+
+# 프롬프트 원본 캐시 — 133MB. 스크립트가 다시 받는다
+.cache/

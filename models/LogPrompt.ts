@@ -20,8 +20,33 @@ export type LogPromptDocument = {
   logId: Types.ObjectId;
   userId: string;
   version: number;
-  /** 사용자가 쓴 말. v1 은 "어떤 느낌이면 좋겠는지", v2+ 는 고쳐 달라는 요청 */
+  /**
+   * 사용자가 쓴 말.
+   *
+   * v1 은 **사진들이 어떻게 합성되길 원하는지**에 대한 설명이다
+   * ("1번 사진 인물을 2번 사진 배경에 넣어 주세요" 처럼).
+   * v2+ 는 고쳐 달라는 요청이다 ("더 밝게" · "포스터 말고 인물사진으로").
+   */
   request: string;
+  /**
+   * 어느 **기초 프롬프트**에서 출발했는가 — `prompts` 컬렉션의 `_id`.
+   *
+   * 생성 요청에 들어가는 리소스가 셋이고(2026-09-18 사용자 지정),
+   * 그중 첫째가 이것이다 —
+   *
+   * ```
+   * ① 고른 분위기의 기초 프롬프트   ← basePromptId
+   * ② 리소스가 될 사진 여러 장      ← log_images(role: input)
+   * ③ 사용자 커스텀 문구            ← request
+   * ```
+   *
+   * 라이선스 표기가 여기 걸려 있다. CC BY 4.0 은 출처 표기가 **조건**이라,
+   * 어느 프롬프트에서 왔는지를 잃으면 화면에 출처를 못 붙인다.
+   * 수정 요청(v2+)도 같은 기초를 물려받는다.
+   */
+  basePromptId: Types.ObjectId | null;
+  /** 고른 분위기. basePromptId 를 지워도 무엇을 골랐는지는 남는다 */
+  mood: string;
   /** 생성된 프롬프트 본문. 복사 버튼이 집어 가는 값 */
   text: string;
   /** 어떤 이미지가 나올지 한 문단. 만들기 전에 판단하라고 준다 */
@@ -45,6 +70,12 @@ const LogPromptSchema = new Schema<LogPromptDocument>(
     userId: { type: String, required: true, index: true },
     version: { type: Number, required: true },
     request: { type: String, default: "" },
+    /*
+      끊어져도 묶음은 살아야 하므로 ref 로 걸지 않고 id 만 남긴다.
+      라이브러리에서 프롬프트가 내려가도(원저작자 요청) 사용자의 기록은 그대로다.
+    */
+    basePromptId: { type: Schema.Types.ObjectId, default: null },
+    mood: { type: String, default: "" },
     text: { type: String, required: true },
     summary: { type: String, default: "" },
     parentVersion: { type: Number, default: null },
