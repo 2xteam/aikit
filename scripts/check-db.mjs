@@ -80,8 +80,18 @@ if (!uri) {
   process.exit(1);
 }
 if (!uri.startsWith("mongodb+srv://")) {
-  console.warn(
-    "! mongodb+srv:// 가 아닙니다. 표준 URI 는 Atlas 가 클러스터를 이전하면 조용히 끊깁니다.",
+  /*
+    로컬은 표준 URI 가 **맞다** — 집안 방침이다.
+    이 PC 의 Node DNS 리졸버가 SRV 질의를 거부하던 때(2026-09-08) 정해졌다.
+
+    ⚠️ 하지만 Vercel 에 이 값을 그대로 넣으면 안 된다. 표준 URI 는 샤드
+    호스트명을 못 박으므로 **Atlas 가 클러스터를 이전하면 조용히 끊긴다.**
+    → my-obsidian-vault / 40-Infra/MongoDB Atlas.md "연결 문자열 형식"
+  */
+  console.log(
+    "· 표준 URI(mongodb://) 입니다 — 로컬은 이게 맞습니다.\n" +
+      "  ⚠️ Vercel 환경 변수에는 mongodb+srv:// 를 넣으세요. 표준 URI 는\n" +
+      "     Atlas 가 클러스터를 이전하면 샤드 호스트명이 바뀌어 조용히 끊깁니다.",
   );
 }
 
