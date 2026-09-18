@@ -3,26 +3,80 @@
 import { useState } from "react";
 import type { CSSProperties } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Sheet } from "@/components/Sheet";
 import { MoodPicker, type PromptCard } from "@/components/MoodPicker";
-import { RATIOS, DEFAULT_RATIO, type RatioId } from "@/lib/prompts/vocab";
+import { PhotoPicker, type Picked } from "@/components/PhotoPicker";
+import { RatioPicker } from "@/components/RatioPicker";
+import { uploadImage } from "@/lib/clientImage";
+import { DEFAULT_RATIO, type RatioId } from "@/lib/prompts/vocab";
 
 /**
- * 새 묶음 만들기 — 프롬프트 생성 요청에 들어가는 **리소스 셋**을 모으는 화면.
+ * 새 묶음 — 생성 요청에 들어가는 **리소스 셋**을 모아 한 번에 보낸다.
  *
  * ```
- * ① 분위기의 기초 프롬프트   분위기 12칸 → 그 안의 프롬프트
- * ② 리소스가 될 사진 여러 장  (업로드는 R2 붙이는 단계에서)
- * ③ 사용자 커스텀 문구        사진들이 어떻게 합성되길 원하는지
- * ④ 비율                      쓸 곳을 아는 것은 사용자뿐이다
+ * ① 분위기의 기초 프롬프트   ② 사진 여러 장   ③ 커스텀 문구   ④ 비율
  * ```
  *
- * → my-obsidian-vault / 50-Plans/H AIKit 구축.md
+ * ⚠️ **묶음은 [만들기] 를 누를 때 만든다.** 화면에 들어오자마자 만들면 중간에
+ * 그만둔 빈 묶음이 쌓인다. 대신 만든 뒤에 실패하면 껍데기가 남는데, 그건
+ * 목록에서 지울 수 있으니 덜 나쁘다.
  */
 export default function NewLogPage() {
+  const router = useRouter();
   const [prompt, setPrompt] = useState<PromptCard | null>(null);
-  const [ratio, setRatio] = useState<RatioId>(DEFAULT_RATIO);
+  const [photos, setPhotos] = useState<Picked[]>([]);
   const [wish, setWish] = useState("");
+  const [ratio, setRatio] = useState<RatioId>(DEFAULT_RATIO);
+
+  const [step, setStep] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const ready = Boolean(prompt) && photos.length > 0 && !step;
+
+  async function run() {
+    if (!prompt || photos.length === 0) return;
+    setError(null);
+
+    let logId: string | null = null;
+    try {
+      setStep("묶음을 만들고 있어요…");
+      const made = await fetch("/api/logs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      }).then((r) => r.json());
+      if (!made.ok) throw new Error(made.error ?? "묶음을 만들지 못했어요.");
+      logId = made.id as string;
+
+      for (let i = 0; i < photos.length; i += 1) {
+        setStep(`사진을 올리고 있어요… ${i + 1}/${photos.length}`);
+        await uploadImage(logId, photos[i], { role: "input" });
+      }
+
+      /* 분석과 합성이 함께 일어난다. 10초쯤 걸리므로 무엇을 하는지 알려 준다 */
+      setStep("사진을 보고 프롬프트를 쓰고 있어요… (10초쯤 걸려요)");
+      const made2 = await fetch(`/api/logs/${logId}/prompts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ basePromptId: prompt.id, request: wish, ratio }),
+      }).then((r) => r.json());
+      if (!made2.ok) throw new Error(made2.error ?? "프롬프트를 만들지 못했어요.");
+
+      router.push(`/logs/${logId}`);
+    } catch (e) {
+      /*
+        묶음까지는 만들어졌을 수 있다. 지우지 않고 **어디로 가면 되는지** 알려 준다 —
+        올린 사진이 남아 있어 다시 만들 때 처음부터 하지 않아도 된다.
+      */
+      setError(
+        (e as Error).message +
+          (logId ? " 올린 사진은 묶음에 남아 있어요. 묶음에서 다시 만들 수 있어요." : ""),
+      );
+      setStep(null);
+      if (logId) router.push(`/logs/${logId}`);
+    }
+  }
 
   return (
     <>
@@ -38,87 +92,57 @@ export default function NewLogPage() {
       </Sheet>
 
       {prompt ? (
-        <Sheet eyebrow="STEP 2" headline="사진을 올려요">
-          <p className="lead">
-            합성에 쓸 사진을 올려요. 여러 장이면 아래에서 <strong>1번 · 2번</strong>으로
-            가리킬 수 있어요.
-          </p>
-          <p className="note-block">
-            <strong>NOTE</strong>
-            프롬프트를 만들 때 올린 사진이 OpenAI 로 한 번 전송돼요. 분석에만 쓰이고,
-            사진은 이 앱의 저장소에만 남습니다.
-          </p>
-          <p style={pendingStyle}>업로드는 이미지 저장소를 붙이는 단계에서 열려요.</p>
-        </Sheet>
-      ) : null}
-
-      {prompt ? (
-        <Sheet eyebrow="STEP 3" headline="어떻게 합성되길 원하나요?">
-          <p className="lead">
-            사진들을 어떻게 쓸지 적어 주세요. 짧아도 됩니다.
-          </p>
-          <textarea
-            value={wish}
-            onChange={(e) => setWish(e.target.value)}
-            rows={4}
-            style={textareaStyle}
-            placeholder="예) 1번 사진의 인물을 2번 사진의 밤거리 배경에 세워 주세요. 표정은 그대로 두고 조명만 바꿔 주세요."
-          />
-        </Sheet>
-      ) : null}
-
-      {prompt ? (
-        <Sheet eyebrow="STEP 4" headline="어떤 비율로 뽑을까요?">
-          <p className="lead">
-            쓸 곳에 따라 구도가 달라져요. 고른 비율이 프롬프트에 들어갑니다.
-          </p>
-          <div className="row row--wrap" style={{ gap: 8, marginTop: 14 }}>
-            {RATIOS.map((r) => (
-              <button
-                key={r.id}
-                type="button"
-                onClick={() => setRatio(r.id)}
-                aria-pressed={ratio === r.id}
-                style={{
-                  ...chipStyle,
-                  borderColor: ratio === r.id ? "var(--accent)" : "var(--border-subtle)",
-                  background: ratio === r.id ? "var(--accent-subtle)" : "var(--bg-card)",
-                }}
-              >
-                <strong style={chipTitleStyle}>{r.ko}</strong>
-                <span style={chipHintStyle}>{r.hint}</span>
-              </button>
-            ))}
-          </div>
-          {/*
-            기초 프롬프트가 전제한 비율과 다르면 알려는 준다. 막지는 않는다 —
-            어디에 쓸지는 사용자만 안다 → lib/prompts/vocab.ts RATIOS
-          */}
-          {prompt.suggestedRatio && prompt.suggestedRatio !== ratio ? (
+        <>
+          <Sheet eyebrow="STEP 2" headline="사진을 올려요">
+            <p className="lead">합성에 쓸 사진을 골라요. 최대 4장이에요.</p>
+            <PhotoPicker value={photos} onChange={setPhotos} max={4} />
             <p className="note-block">
               <strong>NOTE</strong>
-              고른 프롬프트는 원래 {prompt.suggestedRatio} 구도로 쓰인 것이에요.
-              {ratio} 로 뽑아도 되지만 구도가 조금 달라질 수 있어요.
+              프롬프트를 만들 때 올린 사진이 OpenAI 로 한 번 전송돼요. 분석에만 쓰이고,
+              사진은 이 앱의 저장소에만 남습니다. 앱 밖으로 주소가 나가지 않아요.
             </p>
-          ) : null}
-        </Sheet>
-      ) : null}
+          </Sheet>
 
-      {prompt ? (
-        <Sheet center point eyebrow="READY" headline="프롬프트를 만들까요?">
-          <p className="lead" style={{ textAlign: "left" }}>
-            <strong>{prompt.title}</strong> · {RATIOS.find((r) => r.id === ratio)?.ko}
-            {wish ? ` · 요청 ${wish.length}자` : ""}
-          </p>
-          <p style={pendingStyle}>
-            생성은 OpenAI 를 붙이는 단계에서 열려요.
-          </p>
-          <div className="row row--wrap" style={{ gap: 8, justifyContent: "center", marginTop: 14 }}>
-            <Link className="btn btn--ghost btn--sm" href="/logs">
-              ← 내 묶음
-            </Link>
-          </div>
-        </Sheet>
+          <Sheet eyebrow="STEP 3" headline="어떻게 합성되길 원하나요?">
+            <p className="lead">사진들을 어떻게 쓸지 적어 주세요. 짧아도 되고, 비워 둬도 돼요.</p>
+            <textarea
+              value={wish}
+              onChange={(e) => setWish(e.target.value)}
+              rows={4}
+              maxLength={1000}
+              style={textareaStyle}
+              placeholder="예) 1번 사진의 인물을 2번 사진의 밤거리 배경에 세워 주세요. 표정은 그대로 두고 조명만 바꿔 주세요."
+            />
+            <p style={countStyle}>{wish.length} / 1000</p>
+          </Sheet>
+
+          <Sheet eyebrow="STEP 4" headline="어떤 비율로 뽑을까요?">
+            <p className="lead">쓸 곳에 따라 구도가 달라져요. 고른 비율이 프롬프트에 들어갑니다.</p>
+            <RatioPicker value={ratio} onChange={setRatio} suggested={prompt.suggestedRatio} />
+          </Sheet>
+
+          <Sheet center point eyebrow="READY" headline="프롬프트를 만들까요?">
+            <p style={recapStyle}>
+              <strong>{prompt.title}</strong> · 사진 {photos.length}장 · {ratio}
+              {wish ? ` · 요청 ${wish.length}자` : ""}
+            </p>
+
+            {error ? <p style={errStyle}>{error}</p> : null}
+
+            <div className="row row--wrap" style={{ gap: 10, justifyContent: "center", marginTop: 16 }}>
+              <button type="button" className="btn btn--primary" onClick={() => void run()} disabled={!ready}>
+                {step ?? "프롬프트 만들기 →"}
+              </button>
+              <Link className="btn btn--ghost" href="/logs">
+                내 묶음
+              </Link>
+            </div>
+
+            {!prompt || photos.length === 0 ? (
+              <p style={hintStyle}>사진을 한 장 이상 올려야 만들 수 있어요.</p>
+            ) : null}
+          </Sheet>
+        </>
       ) : null}
     </>
   );
@@ -136,32 +160,30 @@ const textareaStyle: CSSProperties = {
   borderRadius: "var(--radius-sm)",
   resize: "vertical",
 };
-
-const chipStyle: CSSProperties = {
-  display: "flex",
-  flexDirection: "column",
-  gap: 2,
-  textAlign: "left",
-  padding: "9px 13px",
-  border: "1px solid var(--border-subtle)",
-  borderRadius: "var(--radius-sm)",
-  cursor: "pointer",
-};
-
-const chipTitleStyle: CSSProperties = {
-  fontSize: "0.82rem",
-  fontWeight: 800,
-  color: "var(--text-primary)",
-};
-
-const chipHintStyle: CSSProperties = {
+const countStyle: CSSProperties = {
+  margin: "5px 0 0",
   fontSize: "0.7rem",
+  textAlign: "right",
+  color: "var(--text-muted)",
+};
+const recapStyle: CSSProperties = {
+  margin: "10px 0 0",
+  fontSize: "0.85rem",
+  lineHeight: 1.7,
   color: "var(--text-secondary)",
 };
-
-const pendingStyle: CSSProperties = {
-  margin: "14px 0 0",
-  fontSize: "0.82rem",
-  fontWeight: 700,
+const errStyle: CSSProperties = {
+  margin: "12px 0 0",
+  padding: "10px 12px",
+  fontSize: "0.8rem",
+  lineHeight: 1.7,
+  textAlign: "left",
+  color: "var(--danger-ink)",
+  background: "var(--danger-subtle)",
+  borderRadius: "var(--radius-sm)",
+};
+const hintStyle: CSSProperties = {
+  margin: "10px 0 0",
+  fontSize: "0.75rem",
   color: "var(--text-muted)",
 };

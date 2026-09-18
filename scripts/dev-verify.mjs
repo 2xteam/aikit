@@ -4,8 +4,8 @@
  * 개발 서버 두 개가 같은 `.next`를 공유하면 서로의 청크를 지워 둘 다 망가진다.
  * 화면은 뜨는데 스크립트가 404로 떨어지고, 결국 응답이 멈춘다.
  *
- *   npm run dev         3005 · .next
- *   npm run dev:verify  3015 · .next-verify
+ *   npm run dev         3008 · .next
+ *   npm run dev:verify  3018 · .next-verify
  *
  * `distDir`은 `next.config.ts`가 `NEXT_DIST_DIR`을 읽어 정한다.
  * (윈도우 cmd에서는 `VAR=x cmd` 형식이 안 먹어서 노드로 감싼다.)
@@ -19,7 +19,9 @@
  */
 import { spawn } from "node:child_process";
 
-const port = process.argv[2] ?? "3015";
+/* ⚠️ typelog 에서 복사해 와 3015(typelog 의 검증 포트)로 박혀 있었다.
+   포트 표의 원본은 볼트 Home.md 다 — 이 앱은 3008 / 검증 3018 이다 */
+const port = process.argv[2] ?? "3018";
 
 spawn("npx", ["next", "dev", "-p", port], {
   stdio: "inherit",
