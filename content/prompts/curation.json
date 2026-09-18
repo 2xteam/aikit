@@ -1,3 +1,46 @@
 {
-  "items": {}
+  "items": {
+    "NB_06367": {
+      "mood": "retro_print"
+    },
+    "NB_01228": {
+      "featured": true
+    },
+    "NB_04414": {
+      "featured": true
+    },
+    "NB_10707": {
+      "featured": true
+    },
+    "NB_01327": {
+      "featured": true
+    },
+    "NB_06549": {
+      "featured": true
+    },
+    "NB_04074": {
+      "featured": false
+    },
+    "NB_00789": {
+      "featured": true
+    },
+    "NB_00444": {
+      "featured": true
+    },
+    "NB_01652": {
+      "featured": true
+    },
+    "NB_03023": {
+      "featured": true
+    },
+    "NB_01258": {
+      "featured": true
+    },
+    "NB_05736": {
+      "featured": true
+    },
+    "NB_21842": {
+      "featured": true
+    }
+  }
 }
