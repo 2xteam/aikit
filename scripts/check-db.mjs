@@ -17,39 +17,28 @@ import { MongoClient } from "mongodb";
 
 dns.setDefaultResultOrder("ipv4first");
 
-/** 이 앱의 DB 이름. lib/db.ts 와 같아야 한다 */
-const DB_NAME = (process.env.MONGO_DB ?? "type").trim() || "type";
+/**
+ * 이 앱의 DB 이름. `lib/db.ts` 와 같아야 한다.
+ *
+ * ⚠️ **환경 변수로 받지 않는다.** typelog 의 같은 스크립트는 `process.env.MONGO_DB`
+ * 를 읽는데, 다른 앱의 .env.local 을 복사하면 그 값이 따라와 **엉뚱한 DB 를 점검**
+ * 하게 된다. 점검 도구가 거짓말을 하면 사고를 못 잡는다.
+ * → my-obsidian-vault / 40-Infra/MongoDB Atlas.md
+ */
+const DB_NAME = "aikit";
 
 /**
  * 기대하는 인덱스. models/*.ts 의 선언과 짝이다.
  * mongoose 가 첫 사용 때 자동으로 만들지만, 드리프트는 조용하므로 여기서 대조한다.
  */
 const EXPECTED = {
-  quizzes: [
-    { name: "slug_1", key: { slug: 1 }, unique: true },
-    { name: "status_1_order_1", key: { status: 1, order: 1 } },
-  ],
-  resulttypes: [
-    { name: "quizId_1", key: { quizId: 1 } },
-    { name: "quizId_1_code_1", key: { quizId: 1, code: 1 }, unique: true },
-  ],
-  attempts: [
-    { name: "owner.userId_1", key: { "owner.userId": 1 } },
-    { name: "owner.guestKey_1", key: { "owner.guestKey": 1 } },
-    { name: "quizId_1", key: { quizId: 1 } },
-    { name: "share.token_1", key: { "share.token": 1 } },
-    {
-      name: "owner.userId_1_quizId_1_attemptNo_-1",
-      key: { "owner.userId": 1, quizId: 1, attemptNo: -1 },
-    },
-    {
-      name: "expiresAt_1",
-      key: { expiresAt: 1 },
-      /** 게스트만 만료시킨다. sparse 로 두면 회원 기록까지 지워질 위험이 있다 */
-      expireAfterSeconds: 0,
-      partialFilterExpression: { "owner.kind": "guest" },
-    },
-  ],
+  /*
+   * M2 에서 채운다 — logs · log_images · log_prompts.
+   * 지금은 비어 있어서 이 스크립트가 **연결과 환경 변수만** 확인한다.
+   * 모델을 만들면서 여기 인덱스를 함께 적는다. 특히 —
+   *   log_images.logId  · log_prompts.logId  (묶음 상세가 매번 조회한다)
+   *   logs.userId + updatedAt  (목록 정렬)
+   */
 };
 
 /** .env.local 을 직접 읽는다 — 표준 node 실행에는 Next 의 로더가 없다 */
@@ -157,7 +146,7 @@ try {
   const userDb = client.db((process.env.MONGO_USER_DB ?? "user").trim() || "user");
   const users = await userDb.collection("users").countDocuments();
   console.log(`\n공용 회원 DB`);
-  console.log(`  users 문서 ${users} — 다섯 앱이 공유합니다. 이 앱은 읽기만 합니다`);
+  console.log(`  users 문서 ${users} — 일곱 앱이 공유합니다. 이 앱은 읽기만 합니다`);
 
   console.log(`\n환경 변수`);
   for (const key of ["SESSION_SECRET", "ADMIN_API_SECRET", "NEXT_PUBLIC_COOKIE_DOMAIN"]) {
@@ -167,7 +156,7 @@ try {
       key === "SESSION_SECRET"
         ? "포털과 같은 값이어야 합니다. 다르면 전부 401"
         : key === "ADMIN_API_SECRET"
-          ? "다섯 배포가 같은 값. 없으면 관리 API 가 503"
+          ? "형제 배포와 같은 값. 없으면 관리 API 가 503"
           : "Vercel 에서는 Secret 이 아니라 Config 타입으로";
     console.log(`  ${mark} ${key.padEnd(28)} ${v ? `길이 ${v.length}` : "없음"}  — ${note}`);
   }
