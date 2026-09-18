@@ -100,25 +100,40 @@ follow later sections less, so what must be obeyed comes first.
   DO NOT        prohibitions, last
 
 HARD RULES
-1. Keep BASE's lighting language, camera language and colour system. Those
-   are the mood. Replace subject, wardrobe, setting and pose from TAGS.
-2. Never invent details TAGS does not support. If TAGS is thin, stay general.
-3. Identity lock in section 1 must say: recreate the person exactly, do not
+1. BASE contributes MOOD ONLY: its lighting language, camera language and
+   colour system. **Never carry over BASE's subject.** If BASE is about a
+   soccer player, a car, a cat or a product, drop that completely. The
+   subject comes from TAGS and REQUEST, never from BASE.
+2. Never invent details TAGS does not support. If TAGS is thin or empty,
+   describe the subject generically ("the person in Image 1", "the object in
+   Image 1") and let REQUEST fill the rest. Do NOT borrow a subject from BASE
+   to fill the gap.
+3. Always end with a DO NOT block. At minimum: no extra people, no brand
+   logos, no watermark, no distorted or extra fingers, no garbled text.
+4. Identity lock in section 1 must say: recreate the person exactly, do not
    beautify, slim, re-age, or alter ethnicity. Put it FIRST, not later.
-4. Never use the words "left" or "right" for body parts. Models mirror the
-   image and then believe they obeyed. Use relative wording instead:
-   "one knee up, the opposite hand down".
-5. Never add a named real person, brand, logo or copyrighted character.
+5. Never use the words "left" or "right" for body parts. Models mirror the
+   image and then believe they obeyed. Describe limbs by their relation to
+   each other instead.
+   ⚠️ Do not copy any wording from these instructions into the prompt. These
+   are rules about how to write, not text to include.
+6. Never add a named real person, brand, logo or copyrighted character.
    If BASE or REQUEST contains one, drop it and note that in "changed".
-6. Never describe anyone's race, age or nationality.
-7. If REQUEST asks for text in the image, keep it to one short line. Models
+7. Never describe anyone's race, age or nationality.
+8. If REQUEST asks for text in the image, keep it to one short line. Models
    garble text, Korean especially.
-8. Keep the prompt under {MAX_CHARS} characters. When trimming, cut the
+9. Keep the prompt under {MAX_CHARS} characters. When trimming, cut the
    scene description first. Never cut the identity lock or the DO NOT block.
+
+LENGTH: sections 1-4 carry the result. Give each of them 2-3 sentences with
+concrete visual detail (materials, textures, light direction, colour names).
+ROLE, TASK and OUTPUT stay one line each. A prompt under 900 characters is
+too thin to steer an image model.
 
 Also write "summary": 2-3 sentences in Korean describing what the resulting
 image will look like, so the user can judge before generating. Plain words,
-no jargon, 해요체.
+no jargon. **Every sentence must end in 해요체** (…해요 / …예요 / …돼요).
+Never mix in 합니다체.
 
 Output JSON only:
 {"prompt":"...","summary":"...","changed":"한 줄 한국어. 없으면 빈 문자열"}`;
@@ -132,15 +147,16 @@ export const REVISE_SYSTEM = `You revise one image-generation prompt according t
 
 - Change only what the request asks for. Keep every other section intact.
 - Never drop the identity lock (section 1) or the DO NOT block.
-- Never use "left" or "right" for body parts; use relative wording.
+- Never use "left" or "right" for body parts; describe limbs by their
+  relation to each other. Do not copy wording from these instructions.
 - If the request asks for a real person, a brand, a logo or a known
   character, refuse that part and revise the rest. Say so in "changed".
 - If the request would push the prompt past {MAX_CHARS} characters, shorten
   the scene description first, never the identity or typography rules.
 - If RATIO changed, update the OUTPUT section to match.
 
-Also rewrite "summary": 2-3 sentences in Korean, 해요체, describing the
-resulting image.
+Also rewrite "summary": 2-3 sentences in Korean describing the resulting
+image. **Every sentence must end in 해요체.** Never mix in 합니다체.
 
 Output JSON only:
 {"prompt":"...","summary":"...","changed":"한 줄 한국어로 무엇을 바꿨는지"}`;

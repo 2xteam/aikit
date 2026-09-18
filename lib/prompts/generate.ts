@@ -126,12 +126,13 @@ function toDataUrl(img: ImageInput): string {
 export async function analyzePhotos(images: ImageInput[]): Promise<unknown> {
   if (images.length === 0) return { images: [] };
 
+
   const content: unknown[] = [{ type: "text", text: analyzeUserText(images.length) }];
   for (const img of images) {
     content.push({ type: "image_url", image_url: { url: toDataUrl(img), detail: "low" } });
   }
 
-  return callJson(
+  const raw = await callJson(
     VISION_MODEL(),
     [
       { role: "system", content: ANALYZE_SYSTEM },
@@ -140,6 +141,19 @@ export async function analyzePhotos(images: ImageInput[]): Promise<unknown> {
     /* 분류에 창의성은 해롭다 */
     0,
   );
+
+  /*
+    ⚠️ 모양을 확인하고 넘긴다. 프롬프트가 조금만 어긋나도 모델이 통째로 `null` 을
+    돌려줄 때가 있는데(2026-09-18 실측), 그걸 그대로 합성에 넘기면 **기초 프롬프트의
+    주제가 사진 대신 살아남는다** — 축구 프롬프트를 고르면 사진과 무관하게 축구
+    선수가 나온다. 비어 있으면 비어 있다고 알리고 합성 쪽이 일반적으로 쓰게 한다.
+  */
+  const obj = raw as { images?: unknown } | null;
+  if (!obj || !Array.isArray(obj.images) || obj.images.length === 0) {
+    console.warn("[openai] 사진 분석이 비었습니다 — 일반적인 서술로 넘어갑니다");
+    return { images: [] };
+  }
+  return obj;
 }
 
 export type ComposeResult = { prompt: string; summary: string; changed: string };
