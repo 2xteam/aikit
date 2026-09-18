@@ -116,10 +116,7 @@ async function main() {
 
   for (const c of cands.items) {
     stat.후보 += 1;
-    if (rej[c.sourceId]) {
-      stat["버림(검수)"] += 1;
-      continue;
-    }
+    if (rej[c.sourceId]) stat["버림(검수)"] += 1;
 
     const pick = cur[c.sourceId] ?? {};
 
@@ -163,6 +160,14 @@ async function main() {
       verified: pick.verified ?? false,
       verifiedAt: pick.verified ? (pick.verifiedAt ? new Date(pick.verifiedAt) : now) : null,
       featured: pick.featured ?? false,
+      /*
+        ⚠️ **필드를 반드시 채운다.** 스키마에 나중에 더한 필드는 기존 문서에
+        없어서 `{ reviewStatus: "pending" }` 으로 찾으면 한 건도 안 잡힌다.
+        (볼트의 emailVerified 사고와 같은 모양이다
+         → my-obsidian-vault / 30-Patterns/인증과 세션 공유.md)
+      */
+      reviewStatus: rej[c.sourceId] ? "rejected" : pick.status === "kept" ? "kept" : "pending",
+      reviewedAt: pick.reviewedAt ? new Date(pick.reviewedAt) : null,
       disabled: pick.disabled ?? false,
       updatedAt: now,
     };

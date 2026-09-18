@@ -104,6 +104,20 @@ export type PromptDocument = {
   /** 검수에서 승급한 것. 원본의 `is_featured` 는 참고만 하고 우리 판단이 덮는다 */
   featured: boolean;
   /**
+   * 사람이 본 결과 — **⑦ 검수 단계의 산출물.**
+   *
+   * `pending`   아직 안 봤다. 목록에는 나오되 kept 뒤로 밀린다
+   * `kept`      쓸 만하다. 목록 맨 앞으로 올라온다
+   * `rejected`  버린다. 목록에서 빠진다
+   *
+   * ⚠️ **원본은 DB 가 아니라 `content/prompts/curation.json` 이다.** 여기 값은
+   * 화면이 바로 반응하라고 둔 사본이고, 재적재 때 파일이 덮어쓴다.
+   * DB 에만 두면 다시 적재하는 순간 사람이 들인 시간이 날아간다.
+   * → my-obsidian-vault / 30-Patterns/프롬프트 데이터 적재 지침.md ④ 멱등
+   */
+  reviewStatus: "pending" | "kept" | "rejected";
+  reviewedAt: Date | null;
+  /**
    * 목록에서 뺀다. **원저작자가 내려 달라고 할 수 있다** — 끄면 즉시 빠져야 한다.
    * 지우지 않고 끄는 이유는 같은 것이 다음 적재 때 다시 올라오지 않게 하려는 것.
    */
@@ -151,6 +165,8 @@ const PromptSchema = new Schema<PromptDocument>(
     verified: { type: Boolean, default: false },
     verifiedAt: { type: Date, default: null },
     featured: { type: Boolean, default: false },
+    reviewStatus: { type: String, enum: ["pending", "kept", "rejected"], default: "pending" },
+    reviewedAt: { type: Date, default: null },
     disabled: { type: Boolean, default: false },
   },
   { timestamps: true, collection: "prompts" },
@@ -164,7 +180,7 @@ PromptSchema.index({ slug: 1 }, { unique: true });
  * 고르는 화면의 정렬 — **검증된 것을 위로.**
  * `disabled` 를 맨 앞에 두어 꺼진 것을 인덱스 단계에서 걸러 낸다.
  */
-PromptSchema.index({ disabled: 1, mood: 1, verified: -1, featured: -1, createdAt: -1 });
+PromptSchema.index({ disabled: 1, reviewStatus: 1, mood: 1, featured: -1, createdAt: -1 });
 
 export function getPromptModel(): Model<PromptDocument> {
   return defineModel<PromptDocument>("Prompt", PromptSchema, "prompts");

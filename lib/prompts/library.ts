@@ -42,12 +42,30 @@ export type MoodCard = {
 };
 
 /**
- * 목록의 정렬 — **검증된 것을 위로.**
+ * 목록의 정렬 — **사람이 고른 것을 위로.**
  *
- * `verified` 는 실제로 이미지를 만들어 확인한 것만 true 다. 지금은 전부 false 라
- * 사실상 `featured` → 최신 순으로 동작한다. 검수를 하면 자연히 위로 올라온다.
+ * `reviewOrder` 는 검수 상태를 숫자로 바꾼 값이다(kept 0 · pending 1).
+ * 검수를 하면 그만큼 좋은 것이 위로 올라오고, **검수를 안 해도 화면은 돈다** —
+ * 검수 전에 전부 감추면 쓸 수 없고, 전부 그대로 두면 다듬지 않은 것이 첫 칸에 온다.
+ *
+ * `verified` 는 실제로 이미지를 만들어 확인한 것만 true 다. 지금은 전부 false 다.
  */
-const ORDER = { verified: -1 as const, featured: -1 as const, createdAt: -1 as const };
+const ORDER = {
+  reviewOrder: 1 as const,
+  featured: -1 as const,
+  verified: -1 as const,
+  createdAt: -1 as const,
+};
+
+/** 서비스 목록에서 빼는 것 — 꺼진 것과 검수에서 버린 것 */
+const VISIBLE = { disabled: false, reviewStatus: { $ne: "rejected" as const } };
+
+/** kept 를 맨 앞으로 보내는 정렬 키. 인덱스 대신 계산 필드를 쓴다 */
+const WITH_ORDER = {
+  $addFields: {
+    reviewOrder: { $cond: [{ $eq: ["$reviewStatus", "kept"] }, 0, 1] },
+  },
+};
 
 function toCard(d: PromptDocument): PromptCard {
   return {
@@ -83,7 +101,8 @@ export async function listMoods(): Promise<MoodCard[]> {
 
   const rows = await getPromptModel()
     .aggregate<{ _id: string; count: number; cover: string[] }>([
-      { $match: { disabled: false, mood: { $ne: null } } },
+      { $match: { ...VISIBLE, mood: { $ne: null } } },
+      WITH_ORDER,
       /* 정렬을 그룹보다 **먼저** 해야 $first 가 대표를 집는다 */
       { $sort: { mood: 1, ...ORDER } },
       {
@@ -125,15 +144,17 @@ export async function listPrompts(
 ): Promise<{ items: PromptCard[]; total: number }> {
   await connectDB();
   const Prompt = getPromptModel();
-  const filter = { disabled: false, mood };
+  const filter = { ...VISIBLE, mood };
 
   const [docs, total] = await Promise.all([
-    Prompt.find(filter, { body: 0 })
-      .sort(ORDER)
-      .skip(Math.max(0, skip))
-      .limit(Math.min(60, Math.max(1, limit)))
-      .lean<PromptDocument[]>()
-      .exec(),
+    Prompt.aggregate<PromptDocument>([
+      { $match: filter },
+      WITH_ORDER,
+      { $sort: ORDER },
+      { $skip: Math.max(0, skip) },
+      { $limit: Math.min(60, Math.max(1, limit)) },
+      { $project: { body: 0, reviewOrder: 0 } },
+    ]).exec(),
     Prompt.countDocuments(filter).exec(),
   ]);
 
