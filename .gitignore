@@ -1,0 +1,40 @@
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/.next-verify/
+/.next-build/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# env files — .env.example 만 저장소에 둔다
+#
+# ⚠️ typelog 의 .gitignore 는 여기에 `.env*` 를 넣어서 주석과 달리
+#    .env.example 까지 함께 빼고 있었다(추적되지 않는다). 부정 패턴은
+#    포괄 패턴 **다음에** 와야 살아나므로 순서를 지킨다.
+.env
+.env.*
+!.env.example
+
+# typescript
+*.tsbuildinfo
+
+certificates
+.vercel

@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <!--
+    16px 전용 AIKit 아이콘.
+
+    app-icon.svg 를 16px 로 줄이면 게이지 호와 대괄호가 같은 몇 픽셀을 나눠 쓰면서
+    테두리만 남고 가운데가 사라진다. 32px 에서는 원본이 읽힌다.
+
+    그래서 16px 에서는 **버릴 것을 버린다.**
+      · 게이지 호 — 지운다. 여섯 앱의 공통 기하지만 16px 에서는 심볼을 가린다
+      · 반짝임 여덟 꼭짓점 — 마름모 하나로 합친다. 4px 안에 갈래가 안 나온다
+    남기는 것은 **대괄호 두 개와 가운데 점**이다. 이게 이 아이콘의 정체다.
+
+    실루엣을 중심에서 1.5배로 키운다 — 여백을 두면 실제로 보이는 크기가 더 줄어든다.
+    획도 11 → 15 로 굵힌다. 원본 굵기를 그대로 두면 축소 후 1px 선이 된다.
+
+    → my-obsidian-vault / 20-Design/앱 공통 UI와 아이콘.md
+  -->
+  <defs>
+    <linearGradient id="tile16" x1="0" y1="0" x2="1" y2="1" gradientTransform="rotate(15)">
+      <stop offset="0" stop-color="#134450"/>
+      <stop offset="1" stop-color="#071c22"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="192" height="192" rx="44" fill="url(#tile16)"/>
+
+  <g transform="translate(96 96) scale(1.5) translate(-96 -106.46)">
+    <g fill="none" stroke="#eef7f8" stroke-width="15"
+       stroke-linecap="round" stroke-linejoin="round">
+      <path d="M78,78 L64,78 L64,135 L78,135"/>
+      <path d="M114,78 L128,78 L128,135 L114,135"/>
+    </g>
+
+    <!-- 마름모 하나. 반짝임의 갈래를 지우고 덩어리만 남긴다 -->
+    <path d="M96,90.46 L110,106.46 L96,122.46 L82,106.46 Z" fill="#e8d18a"/>
+  </g>
+</svg>

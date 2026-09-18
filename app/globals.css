@@ -1,0 +1,1200 @@
+@import "./palette.css";
+
+/* ── 테마 변수 ──
+ * 색을 직접 쓰지 않고 항상 이 변수를 참조한다.
+ * 팔레트는 결쩜사(kyulzzumsa.co.kr)를 따르고 **라이트 전용**이다.
+ * 테마 선택 UI를 두지 않으므로 [data-theme] 블록도 두지 않는다.
+ * 근거: my-obsidian-vault → 20-Design/앱 공통 UI와 아이콘.md
+ * ── */
+
+/* 구조 값 */
+:root {
+  --radius-sm: 10px;
+  --radius-md: 18px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
+  --radius-full: 9999px;
+  --nav-height: 56px;
+
+  /* 폭 — 글 읽는 폭과 카드 그리드 폭 두 가지만 쓴다 */
+  --content-reading: 760px;
+  --content-wide: 1180px;
+  --page-gutter: clamp(20px, 4.2vw, 64px);
+}
+
+/* 색 — 네 앱과 같은 값을 쓴다. 순수 검정·회색을 쓰지 않는다 */
+
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  font-family: Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    "Noto Sans KR", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+}
+
+/* ── Scrollbar ──
+ * 이 규칙이 없으면 **브라우저 기본 스크롤바**(넓은 회색)가 나온다.
+ * 다른 네 앱은 4px 로 얇게 쓰고 있어서 typelog 만 스크롤이 달라 보였다.
+ * (2026-09-07 발견 — 사용자가 "스크롤이 조금 다르다"고 했다)
+ * ── */
+
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* ── Selection highlight ── */
+
+::selection {
+  background: var(--accent-subtle);
+  color: var(--text-primary);
+}
+
+/* ────────────────────────────────────────────────────────────
+ * 시트 구조 — 결쩜사 패턴
+ *   옅은 배경 위에 둥근 시트를 쌓고, 시트마다 eyebrow → 헤드라인 → 콘텐츠.
+ * 근거: my-obsidian-vault → 20-Design/결쩜사 페이지 패턴.md
+ * ──────────────────────────────────────────────────────────── */
+
+.page {
+  max-width: var(--content-wide);
+  margin: 0 auto;
+  padding: clamp(18px, 4vw, 34px) var(--page-gutter) 64px;
+}
+
+.page--reading {
+  max-width: var(--content-reading);
+}
+
+.sheet {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(22px, 5vw, 32px);
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 18px 44px rgba(6, 34, 40, 0.08);
+}
+
+.sheet + .sheet {
+  margin-top: 18px;
+}
+
+.sheet--tint {
+  background: var(--bg-secondary);
+  box-shadow: none;
+  border: 1px solid var(--border);
+}
+
+.sheet--dark {
+  background:
+    radial-gradient(circle at 78% 16%, rgba(95, 184, 201, 0.14), transparent 36%),
+    linear-gradient(150deg, #04161b, #0e3037 65%, #134450);
+  color: #fff;
+  border: none;
+}
+
+.sheet--gold {
+  background: color-mix(in srgb, var(--point) 8%, var(--bg-card));
+  border: 1px solid color-mix(in srgb, var(--point) 34%, transparent);
+  box-shadow: none;
+}
+
+/* 시트 머리 — eyebrow는 영문 명사형, 헤드라인은 국문 */
+.eyebrow {
+  margin: 0 0 10px;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: var(--accent);
+}
+
+/* 어두운 배경의 eyebrow는 금색 */
+.sheet--dark .eyebrow {
+  color: #ead58c;
+}
+
+.headline {
+  margin: 0;
+  /* 결쩜사의 큰 헤드라인은 명조(Gowun Batang) 700이다 */
+  font-family: "Gowun Batang", serif;
+  font-size: clamp(21px, 4.4vw, 28px);
+  font-weight: 700;
+  line-height: 1.42;
+  letter-spacing: -0.8px;
+  color: var(--text-primary);
+  word-break: keep-all;
+}
+
+.sheet--dark .headline {
+  color: #fff;
+}
+
+.lead {
+  margin: 10px 0 0;
+  font-size: 0.88rem;
+  line-height: 1.8;
+  color: var(--text-secondary);
+  word-break: keep-all;
+}
+
+.sheet--dark .lead {
+  color: rgba(230, 244, 246, 0.72);
+}
+
+/* 상태 알약 배지 */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--accent-subtle);
+  color: var(--accent);
+}
+
+.pill--gold {
+  background: var(--point-subtle);
+  color: var(--point-ink);
+}
+
+.sheet--dark .pill {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ead58c;
+}
+
+/* 버튼 — 네 종류로 고정한다. 새 스타일을 만들기 전에 이걸로 되는지 먼저 본다 */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 13px 20px;
+  border: none;
+  border-radius: 11px;
+  font-size: 15px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn--primary {
+  background: linear-gradient(135deg, #14788a, #0d5866);
+  box-shadow: 0 10px 24px rgba(6, 60, 72, 0.18);
+  color: var(--on-accent);
+}
+
+.btn--gold {
+  background: linear-gradient(135deg, #e8c96a, #c9a84c);
+  color: #2a1c00;
+}
+
+.btn--ghost {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+}
+
+.sheet--dark .btn--ghost {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(150, 205, 216, 0.3);
+  color: #fff;
+}
+
+.btn--muted {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+}
+
+.btn--block {
+  width: 100%;
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+/* 알약 탭 — /types 의 "지금 해보기 / 오픈 예정" */
+.tabs {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: #f6f1f9;
+}
+
+.tab {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.tab[aria-selected="true"] {
+  background: #fff;
+  color: var(--text-primary);
+  box-shadow: 0 4px 15px rgba(6, 34, 40, 0.08);
+}
+
+
+/* ────────────────────────────────────────────────────────────
+ * 상단 내비 · 앱 스위처 · 푸터 — 앱들이 공유하는 시각 체계
+ * FitLog 에서 이식했고 [data-theme] 블록은 뺐다 (라이트 전용).
+ * 근거: my-obsidian-vault → 20-Design/앱 공통 UI와 아이콘.md
+ * ──────────────────────────────────────────────────────────── */
+
+.topnav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-primary);
+  z-index: 100;
+}
+
+.topnav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--nav-height);
+  padding: 0 1.25rem;
+  flex-shrink: 0;
+}
+
+.topnav-logo-wrap {
+  position: relative;
+}
+
+.topnav-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 1.25rem;
+  font-weight: 900;
+  font-style: italic;
+  color: var(--accent);
+  text-decoration: none;
+  letter-spacing: -0.03em;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+}
+
+.topnav-logo:hover {
+  transform: none;
+}
+
+.topnav-logo-icon {
+  flex-shrink: 0;
+  border-radius: 8px;
+}
+
+.app-switcher {
+  position: absolute;
+  top: calc(100% + 12px);
+  left: -8px;
+  min-width: 200px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 8px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: app-switcher-in 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: top left;
+}
+
+@keyframes app-switcher-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.app-switcher-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  transition: background 0.15s, color 0.15s;
+}
+
+.app-switcher-item:hover {
+  background: var(--bg-elevated);
+}
+
+.app-switcher-item--active {
+  background: var(--bg-elevated);
+  color: var(--accent);
+}
+
+.app-switcher-icon {
+  flex-shrink: 0;
+  border-radius: 8px;
+}
+
+.app-brand-icon {
+  flex-shrink: 0;
+  border-radius: 10px;
+}
+
+.topnav-links {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.topnav-link {
+  padding: 0.45rem 0.85rem;
+  border-radius: var(--radius-full);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.15s, background 0.15s;
+}
+
+.topnav-link:hover {
+  color: var(--text-primary);
+  background: var(--bg-card);
+  opacity: 1;
+}
+
+.topnav-link[data-active="true"] {
+  color: var(--text-primary);
+  background: var(--bg-card);
+}
+
+.topnav-logout {
+  padding: 0.4rem 0.75rem;
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-decoration: none;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.topnav-logout:hover {
+  color: var(--text-secondary);
+  transform: none;
+}
+
+/* Hamburger → X animated icon */
+.topnav-hamburger {
+  display: none;
+  position: relative;
+  width: 36px;
+  height: 36px;
+  background: var(--bg-card);
+  border: none;
+  border-radius: 50%;
+  padding: 0;
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+
+.topnav-hamburger:hover {
+  color: var(--text-primary);
+  transform: none;
+}
+
+.topnav-hamburger-line {
+  position: absolute;
+  left: 8px;
+  width: 20px;
+  height: 2px;
+  background: currentColor;
+  border-radius: 1px;
+  transition: transform 0.3s ease, opacity 0.2s ease;
+}
+
+.topnav-hamburger-line--1 { top: 11px; }
+.topnav-hamburger-line--2 { top: 17px; }
+.topnav-hamburger-line--3 { top: 23px; }
+
+.topnav-hamburger--open .topnav-hamburger-line--1 {
+  transform: translateY(6px) rotate(45deg);
+}
+.topnav-hamburger--open .topnav-hamburger-line--2 {
+  opacity: 0;
+}
+.topnav-hamburger--open .topnav-hamburger-line--3 {
+  transform: translateY(-6px) rotate(-45deg);
+}
+
+/* ── Mobile expandable menu inside the nav bar ── */
+
+.topnav-menu {
+  display: none;
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.25s ease,
+              padding 0.35s ease;
+  padding: 0 1.25rem;
+  flex-direction: column;
+}
+
+.topnav--open .topnav-menu {
+  max-height: 320px;
+  opacity: 1;
+  padding: 0 1.25rem 1rem;
+}
+
+.topnav-menu-link {
+  display: block;
+  padding: 0.75rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-decoration: none;
+  border-bottom: 1px solid var(--border-subtle);
+  transition: color 0.15s;
+}
+
+.topnav-menu-link:hover {
+  color: var(--text-primary);
+  opacity: 1;
+}
+
+.topnav-menu-link[data-active="true"] {
+  color: var(--accent);
+}
+
+/* 접힌 메뉴의 Logout — 위 링크들과 같은 줄 높이·정렬로 맞춘다.
+   버튼이라 폰트·배경·정렬을 명시해야 링크와 같아진다. */
+.topnav-menu-logout {
+  width: 100%;
+  border: none;
+  border-bottom: none;
+  background: none;
+  font-family: inherit;
+  text-align: left;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.topnav-menu-logout:hover {
+  color: var(--danger);
+}
+
+/* Click-away backdrop */
+.topnav-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99;
+  background: transparent;
+}
+
+/* Responsive breakpoints */
+@media (max-width: 768px) {
+  .topnav-links { display: none; }
+  .topnav-hamburger { display: flex; align-items: center; justify-content: center; }
+  .topnav-menu { display: flex; }
+}
+
+@media (min-width: 769px) {
+  .topnav {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    width: calc(100% - 24px);
+    max-width: 960px;
+  }
+  .topnav-hamburger { display: none; }
+  .topnav-menu { display: none !important; }
+}
+
+.field-hint {
+  margin: 6px 0 0;
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+/* NOTE 블록 */
+.note-block {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 11.5px;
+  line-height: 1.9;
+  color: var(--text-muted);
+  word-break: keep-all;
+}
+
+.note-block strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 2px;
+}
+
+
+/* ────────────────────────────────────────────────────────────
+ * 상단 네비 — 주 기능(Home · Inbody · History)만 노출하고
+ * 부가 기능(My · Notice · Q&A · Logout)은 "더보기"로 접는다.
+ * 모바일에서는 햄버거 메뉴 안에서 얇은 구분선 아래로 내려간다.
+ * ──────────────────────────────────────────────────────────── */
+
+.topnav-more-wrap {
+  position: relative;
+}
+
+.topnav-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.topnav-more-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 148px;
+  padding: 6px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  box-shadow: 0 18px 40px rgba(6, 34, 40, 0.18);
+  z-index: 60;
+  display: grid;
+  gap: 2px;
+}
+
+.topnav-more-item {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 9px;
+  background: none;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.topnav-more-item:hover {
+  background: var(--accent-subtle);
+  color: var(--accent);
+}
+
+.topnav-more-item--danger {
+  color: var(--text-muted);
+}
+
+.topnav-more-item--danger:hover {
+  background: var(--danger-subtle);
+  color: var(--danger);
+}
+
+/* 모바일 메뉴에서 부가 기능은 구분선 아래로.
+   `:first-of-type`는 같은 태그의 첫 형제(=Home)를 가리켜 쓸 수 없다.
+   주 기능 다음에 오는 첫 부가 기능만 골라 구분선을 준다. */
+.topnav-menu-link[data-sub="false"] + .topnav-menu-link[data-sub="true"] {
+  margin-top: 6px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.topnav-menu-link[data-sub="true"] {
+  color: var(--text-secondary);
+}
+
+/* ── myjane 워드마크 (푸터) ──
+ * `my`는 배경에 맞춰 본문 색을 쓰고, `jane`은 앱 테마와 무관하게
+ * myjane 브랜드 먹청으로 고정한다. 흰 배경에서는 my가 검정,
+ * 어두운 배경에서는 my가 흰색으로 보인다. */
+.myjane-mark {
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+  color: var(--text-primary);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.myjane-mark:hover {
+  text-decoration: underline;
+}
+
+/* jane 은 브랜드 색이라 앱 액센트와 무관하게 먹청 고정이다.
+   var(--accent) 를 쓰면 민트 액센트 앱에서 초록색 jane 이 나온다.
+   → my-obsidian-vault / 20-Design/앱 공통 UI와 아이콘.md */
+/*
+ * jane 은 myjane 브랜드 색이다.
+ *
+ * ⚠️ 이 워드마크는 **항상 어두운 푸터 위에** 있다 (배경이 #061a1f 리터럴이라
+ * 앱 테마와 무관하다). 그래서 밝은 면용 먹청(#116271)이 아니라 짙은 면용
+ * 값을 쓴다 — 밝은 값으로는 2.56:1 이다.
+ *
+ * 원래 규칙이 둘로 나뉘어 있었고 밝은 값이 뒤에서 이기고 있었다.
+ * 보라 시절에도 3.32:1 로 미달이었다. 한 줄로 합친다.
+ */
+.myjane-mark > span {
+  color: #5fb8c9;
+}
+
+/* ── 소개 페이지 레이아웃 ──
+ * 시트를 쌓는 화면의 바깥 컨테이너. 이 규칙이 없으면 시트가 화면 전체 폭으로
+ * 퍼져 결쩜사 패턴("옅은 배경 위에 둥근 시트")이 무너진다.
+ * 좁은 창에서는 티가 나지 않아 놓치기 쉽다 — 넓은 창에서 확인할 것.
+ * 근거: my-obsidian-vault → 20-Design/결쩜사 페이지 패턴.md
+ * ── */
+.page {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: clamp(18px, 4vw, 28px) clamp(16px, 4.2vw, 24px) 40px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.row--wrap {
+  flex-wrap: wrap;
+}
+
+.muted {
+  color: var(--text-muted);
+}
+
+.btn--sm {
+  padding: 7px 13px;
+  font-size: 12.5px;
+  border-radius: 9px;
+}
+
+/* ────────────────────────────────────────────────────────────
+ * 질문지 목록 · 응시 · 결과
+ * ──────────────────────────────────────────────────────────── */
+
+.quiz-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+}
+
+.quiz-card-emoji {
+  flex-shrink: 0;
+  font-size: 30px;
+  line-height: 1;
+}
+
+/**
+ * 좁은 화면에서는 **버튼을 아래 줄로 내린다.**
+ *
+ * 이모지 · 글 · 버튼을 한 줄에 두면 가운데 글 칸이 눌려서 제목이 한두 글자씩
+ * 줄바꿈된다("나는 / 어떤 / 성향 / 일까?"). 추천 연령 알약이 하나 더 붙으면서
+ * 더 심해졌다. 글이 이 카드의 주인이므로 글에 폭을 준다.
+ */
+@media (max-width: 420px) {
+  .quiz-card {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+  .quiz-card > .btn {
+    width: 100%;
+    margin-top: 4px;
+  }
+}
+
+.quiz-card-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  color: var(--text-primary);
+}
+
+.quiz-card-sub {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  word-break: keep-all;
+}
+
+.quiz-card-notice {
+  margin: 10px 0 0;
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--point-ink);
+  word-break: keep-all;
+}
+
+.quiz-msg {
+  margin: 16px 0 0;
+  font-size: 13px;
+  color: var(--danger);
+}
+
+/* 응시 — 진행 바와 선택지 */
+.play-progress {
+  height: 6px;
+  margin-top: 22px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  overflow: hidden;
+}
+
+.play-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: #e8d18a;
+  transition: width 240ms cubic-bezier(0.2, 0.72, 0.2, 1);
+}
+
+.play-count {
+  margin: 8px 0 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: rgba(230, 244, 246, 0.6);
+}
+
+/**
+ * 선택지 — 아이가 누른다. 손가락이 닿는 크기여야 하므로 최소 높이 56px.
+ * 근거: 목업의 hit target 은 44px 아래로 내려가지 않는다
+ */
+.play-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  padding: 14px 18px;
+  border: 1px solid rgba(150, 205, 216, 0.28);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.5;
+  text-align: left;
+  word-break: keep-all;
+  cursor: pointer;
+  transition: background 160ms, border-color 160ms;
+}
+
+.play-option:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.play-option[data-chosen="true"] {
+  background: rgba(232, 209, 138, 0.16);
+  border-color: #e8d18a;
+}
+
+.play-option:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* 결과 */
+.result-summary {
+  margin: 20px 0 0;
+  font-size: 0.95rem;
+  line-height: 1.85;
+  color: rgba(230, 244, 246, 0.9);
+  word-break: keep-all;
+}
+
+.result-list {
+  margin: 18px 0 0;
+  padding: 0 0 0 2px;
+  list-style: none;
+  display: grid;
+  gap: 9px;
+}
+
+.result-list li {
+  position: relative;
+  padding-left: 18px;
+  font-size: 0.9rem;
+  line-height: 1.75;
+  color: var(--text-primary);
+  word-break: keep-all;
+}
+
+.result-list li::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 0.65em;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+.result-list--muted li {
+  color: var(--text-secondary);
+}
+
+.result-list--muted li::before {
+  background: var(--point);
+}
+
+.result-sub-label {
+  margin: 22px 0 0;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.4px;
+  color: var(--text-muted);
+}
+
+.result-fact {
+  margin: 18px 0 0;
+  font-size: 12.5px;
+  line-height: 1.8;
+  color: var(--text-muted);
+  word-break: keep-all;
+}
+
+/**
+ * 어느 쪽에 가까운가 — **막대나 그래프를 쓰지 않는다.**
+ * 성향에는 늘었다·줄었다로 읽을 수치가 없고, 숫자로 증명하지 않는 것이 이 앱의 톤이다.
+ */
+.lean-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.lean-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+}
+
+.lean-label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  color: var(--text-muted);
+  min-width: 82px;
+}
+
+.lean-value {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.lean-other {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* ── 기록 · 도감 ─────────────────────────────────────────────
+   그래프를 쓰지 않는다. 성향에는 "늘었다·줄었다"로 읽을 수치가 없다.
+   변화는 **타입이 바뀌었는지**로만 말한다.
+   근거: my-obsidian-vault → 10-Projects/TypeLog.md
+   ──────────────────────────────────────────────────────────── */
+
+.dex {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.dex-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--bg-card);
+  text-align: center;
+}
+
+/* 아직 안 나온 타입은 자리만 남긴다 — 없는 척하면 도감이 되지 않는다 */
+.dex-cell[data-found="false"] {
+  border-style: dashed;
+  background: transparent;
+}
+
+.dex-emoji {
+  font-size: 1.55rem;
+  line-height: 1;
+}
+
+.dex-cell[data-found="false"] .dex-emoji {
+  opacity: 0.28;
+  filter: grayscale(1);
+}
+
+.dex-name {
+  font-size: 0.72rem;
+  line-height: 1.3;
+  color: var(--text-secondary);
+  word-break: keep-all;
+}
+
+.dex-cell[data-found="false"] .dex-name {
+  color: var(--text-muted);
+}
+
+.timeline {
+  display: grid;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.timeline-row {
+  display: flex;
+  align-items: center;
+  /* 좁은 화면에서 메모를 아래 줄로 내리기 위해 줄바꿈을 허용한다 */
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--bg-card);
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.timeline-row:hover {
+  border-color: rgba(17, 98, 113, 0.3);
+  transform: translateY(-1px);
+}
+
+.timeline-no {
+  flex: 0 0 auto;
+  min-width: 2.6rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+}
+
+.timeline-emoji {
+  flex: 0 0 auto;
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.timeline-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 0.94rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  word-break: keep-all;
+}
+
+.timeline-gap {
+  flex: 1 1 auto;
+}
+
+.timeline-note {
+  flex: 0 0 auto;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  word-break: keep-all;
+}
+
+/* 바뀐 회차만 눈에 걸리게 한다. 같은 회차는 조용해도 된다 */
+.timeline-note--changed {
+  color: var(--point-ink);
+  font-weight: 600;
+}
+
+.timeline-date {
+  flex: 0 0 auto;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 520px) {
+  .timeline-date {
+    display: none;
+  }
+}
+
+/**
+ * 아주 좁은 화면(작은 폰)에서는 타입 이름과 메모가 한 줄에 안 들어간다.
+ * 이름을 줄이지 않고 메모를 다음 줄로 내린다 — 이름이 이 줄의 주인이다.
+ */
+@media (max-width: 420px) {
+  .timeline-gap {
+    display: none;
+  }
+  .timeline-note {
+    flex: 1 0 100%;
+    /* 회차 번호와 이모지 폭만큼 들여써서 이름 아래에 붙는다 */
+    padding-left: calc(2.6rem + 1.35rem + 24px);
+    margin-top: -4px;
+  }
+}
+
+/* ── 공유 링크 (헤더 없는 껍데기) ───────────────────────────── */
+
+.shared-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 18px;
+  font-family: "Gowun Batang", serif;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+/* ── 나이대 거르기 · 추천 연령 ──────────────────────────────────
+   질문지가 다섯 살부터 열아홉 살까지로 갈렸다. 카드에서 가장 먼저 보고
+   걸러야 하는 값이라 알약 중 추천 연령만 색을 준다.
+   근거: my-obsidian-vault → 10-Projects/TypeLog.md
+   ──────────────────────────────────────────────────────────── */
+
+.filter-label {
+  margin: 20px 0 8px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.filter-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.chip {
+  padding: 7px 13px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.chip:hover:not(:disabled) {
+  border-color: rgba(17, 98, 113, 0.3);
+}
+
+.chip[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+/* 아무것도 안 남는 나이대는 누를 수 없다. 눌러서 빈 화면을 보는 것보다 낫다 */
+.chip:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.pill--age {
+  border-color: rgba(17, 98, 113, 0.28);
+  background: var(--accent-subtle);
+  color: var(--accent);
+}
+
+/* 브랜드·나라 이름을 결과로 쓰는 질문지에 붙는 한 줄 */
+.quiz-card-fineprint {
+  margin: 10px 0 0;
+  font-size: 0.68rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+  word-break: keep-all;
+}
+
+.result-fineprint {
+  margin: 20px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 0.68rem;
+  line-height: 1.55;
+  color: var(--text-muted);
+  word-break: keep-all;
+}

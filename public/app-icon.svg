@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <!--
+    AIKit 앱 아이콘 — 프롬프트 대괄호 안의 반짝임.
+
+    여섯 앱과 같은 기하학(짙은 먹청 타일 + 게이지 호)을 쓰고 안쪽 심볼만 다르다.
+    두 호는 같은 <circle>을 stroke-dasharray 만 바꿔 그린다 — 따로 <path>로 그리면
+    끝점이 어긋난다(SnapWord 13.8px · FitLog 6.2px 벗어난 전례).
+
+    심볼을 고른 이유 —
+      대괄호 `[ ]`  프롬프트. 굵은 획 두 개라 32px 에서도 형태가 살아 있다
+      골드 반짝임    AI. TypeLog 의 반짝임과 같은 금색이라 가족으로 읽힌다
+    "묶는다"를 사진 두 장 겹치기로 그려 봤지만 32px 에서 사각 두 개가 붙어
+    회색 덩어리가 됐다. 대괄호는 가운데가 비어 있어 그 문제가 없다.
+
+    치수 —
+      획 11        여섯 앱의 심볼 획과 같다. 9 로 두면 가족에서 혼자 가늘어진다
+      세로 획      x 62 · 130 (중심 96 대칭), y 76~137
+      코너 거리    중심에서 45.7 + 획 절반 5.5 = 51.2 < 54.5 (게이지 호 안쪽)
+      반짝임       외반경 20 · 내반경 10.5. 네 변형을 실제로 32px 로 구워 보고 골랐다 —
+                   내반경 7.5 는 갈래가 가늘어 **더하기 기호(+)로 읽혔고**, 13 은
+                   반대로 통통해져 보석이 됐다. 10.5 에서만 32px 에서도 반짝임으로 읽힌다.
+                   외반경을 24 로 키우면 왼쪽 끝이 대괄호 획에 2.5px 까지 붙어 뭉친다
+
+    → my-obsidian-vault / 20-Design/앱 공통 UI와 아이콘.md · 10-Projects/AIKit.md
+  -->
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1" gradientTransform="rotate(15)">
+      <stop offset="0" stop-color="#134450"/>
+      <stop offset="1" stop-color="#071c22"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="192" height="192" rx="44" fill="url(#tile)"/>
+
+  <!-- 게이지 호 — 여섯 앱과 같은 값 -->
+  <g transform="rotate(158.96 96 106.46)">
+    <circle cx="96" cy="106.46" r="60" fill="none" stroke="#4a95a6"
+            stroke-width="11" stroke-linecap="round" stroke-dasharray="232.6 144.4"/>
+    <circle cx="96" cy="106.46" r="60" fill="none" stroke="#e8d18a"
+            stroke-width="11" stroke-linecap="round" stroke-dasharray="128 249"/>
+  </g>
+
+  <!-- 대괄호 두 개 -->
+  <g fill="none" stroke="#eef7f8" stroke-width="11"
+     stroke-linecap="round" stroke-linejoin="round">
+    <path d="M77,76 L62,76 L62,137 L77,137"/>
+    <path d="M115,76 L130,76 L130,137 L115,137"/>
+  </g>
+
+  <!-- 반짝임 — 게이지 호와 같은 골드. 흰색이면 대괄호와 한 덩어리로 읽힌다 -->
+  <path d="M96,86.46 L103.42,99.04 L116,106.46 L103.42,113.88 L96,126.46
+           L88.58,113.88 L76,106.46 L88.58,99.04 Z"
+        fill="#e8d18a"/>
+</svg>
