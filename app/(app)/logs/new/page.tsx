@@ -83,11 +83,15 @@ export default function NewLogPage() {
       <Sheet
         point
         eyebrow="STEP 1"
-        headline="어떤 분위기로 만들까요?"
-        lead="글보다 그림으로 골라요. 분위기를 고르면 그 안의 프롬프트가 나와요."
+        headline={prompt ? "고른 분위기" : "어떤 분위기로 만들까요?"}
+        lead={
+          prompt
+            ? undefined
+            : "글보다 그림으로 골라요. 옆으로 넘겨서 보고, 고르면 접혀요."
+        }
       >
-        <div style={{ marginTop: 16 }}>
-          <MoodPicker selectedId={prompt?.id ?? null} onPick={setPrompt} />
+        <div style={{ marginTop: prompt ? 14 : 16 }}>
+          <MoodPicker selected={prompt} onPick={setPrompt} />
         </div>
       </Sheet>
 
