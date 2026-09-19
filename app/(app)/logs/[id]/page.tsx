@@ -7,6 +7,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Sheet } from "@/components/Sheet";
 import { PhotoPicker, type Picked } from "@/components/PhotoPicker";
 import { RatioPicker } from "@/components/RatioPicker";
+import { BusyOverlay } from "@/components/BusyOverlay";
 import { uploadImage } from "@/lib/clientImage";
 import { DEFAULT_RATIO, isRatioId, moodLabel, type RatioId } from "@/lib/prompts/vocab";
 
@@ -33,8 +34,18 @@ type Prompt = {
   text: string;
   summary: string;
   mood: string;
+  moodKo: string;
   ratio: string;
   parentVersion: number | null;
+  createdAt: string;
+  /** 고른 기초 프롬프트. 라이브러리에서 내려갔으면 null */
+  base: {
+    id: string;
+    title: string;
+    blurb: string;
+    thumb: string | null;
+    credit: { author: string; link: string; license: string; modified: boolean };
+  } | null;
 };
 type Data = {
   log: { id: string; title: string; memo: string };
@@ -79,7 +90,7 @@ export default function LogDetailPage() {
 
   async function removeLog() {
     if (!confirm("이 묶음을 지울까요? 올린 이미지도 함께 지워지고 되돌릴 수 없어요.")) return;
-    setBusy("지우는 중…");
+    setBusy("묶음을 지우고 있어요");
     const j = await fetch(`/api/logs/${id}`, { method: "DELETE" }).then((r) => r.json());
     if (j.ok) router.push("/logs");
     else {
@@ -90,6 +101,8 @@ export default function LogDetailPage() {
 
   return (
     <>
+      <BusyOverlay message={busy} />
+
       <Sheet
         tone="dark"
         point
@@ -148,7 +161,7 @@ export default function LogDetailPage() {
             ← 내 묶음
           </Link>
           <button type="button" className="btn btn--ghost btn--sm" onClick={() => void removeLog()}>
-            {busy ?? "묶음 지우기"}
+            묶음 지우기
           </button>
         </div>
       </Sheet>
@@ -181,13 +194,50 @@ function PromptCard({ prompt, isLatest }: { prompt: Prompt; isLatest: boolean })
         </span>
         <span style={verMetaStyle}>
           {prompt.ratio} · {prompt.text.length}자
+          {prompt.createdAt
+            ? ` · ${new Date(prompt.createdAt).toLocaleDateString("ko-KR", { month: "numeric", day: "numeric" })}`
+            : ""}
         </span>
       </header>
 
-      {/* 사용자가 뭐라고 했는지 — 두 달 뒤에 이게 없으면 왜 이렇게 됐는지 모른다 */}
+      {/*
+        ── 히스토리 (2026-09-19 사용자 지정) ──
+        두 달 뒤에 열었을 때 **무엇을 골랐고 내가 뭐라고 했는지**가 남아 있어야 한다.
+        그게 없으면 프롬프트 본문만 남아 왜 이렇게 됐는지 알 수 없다.
+      */}
+      {prompt.base || prompt.moodKo ? (
+        <div style={baseStyle}>
+          {prompt.base?.thumb ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={prompt.base.thumb}
+              alt=""
+              style={baseThumbStyle}
+              loading="lazy"
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <span style={{ ...baseThumbStyle, ...baseThumbEmptyStyle }} aria-hidden="true">
+              프롬프트
+            </span>
+          )}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <span style={baseTagStyle}>고른 프롬프트</span>
+            <strong style={baseTitleStyle}>
+              {prompt.base?.title ?? "라이브러리에서 내려간 프롬프트"}
+            </strong>
+            <p style={baseMetaStyle}>
+              {prompt.moodKo}
+              {prompt.base?.credit.author ? ` · 출처 ${prompt.base.credit.author}` : ""}
+              {prompt.base?.credit.license ? ` · ${prompt.base.credit.license}` : ""}
+            </p>
+          </div>
+        </div>
+      ) : null}
+
       {prompt.request ? (
         <p style={requestStyle}>
-          <span style={requestTagStyle}>{prompt.version === 1 ? "요청" : "고쳐 달라고 한 말"}</span>
+          <span style={requestTagStyle}>{prompt.version === 1 ? "내가 쓴 요청" : "고쳐 달라고 한 말"}</span>
           {prompt.request}
         </p>
       ) : null}
@@ -267,6 +317,11 @@ function Revise({
 
   return (
     <Sheet eyebrow="REVISE" headline="고칠 데가 있나요?">
+      {/* 생성은 10초쯤 걸린다. 덮지 않으면 또 누른다 — 그러면 버전이 둘 생긴다 */}
+      <BusyOverlay
+        message={busy ? "프롬프트를 고치고 있어요" : null}
+        detail="10초쯤 걸려요. 창을 닫지 마세요."
+      />
       <p className="lead">
         바꾸고 싶은 것만 적으면 돼요. 나머지는 그대로 둡니다. v{latest.version} 위에 새
         버전이 쌓여요.
@@ -296,7 +351,7 @@ function Revise({
           onClick={() => void run()}
           disabled={busy || !text.trim()}
         >
-          {busy ? "고치는 중… (10초쯤)" : "다시 만들기 →"}
+          다시 만들기 →
         </button>
       </div>
     </Sheet>
@@ -307,6 +362,14 @@ function Revise({
  * 결과 되가져오기 — **이게 빠지면 흐름이 끊긴다.**
  *
  * 자리를 **비워 둔 채로 보여 준다.** 돌아왔을 때 어디에 올리는지 찾지 않게.
+ */
+/**
+ * 결과 되가져오기 — **이게 빠지면 흐름이 끊긴다.**
+ *
+ * 자리를 **비워 둔 채로 보여 준다.** 돌아왔을 때 어디에 올리는지 찾지 않게.
+ *
+ * ⚠️ **고르면 바로 올라간다** (2026-09-19 사용자 지정). 고르고 나서 버튼을 한 번
+ * 더 누르게 하면, 고른 것만으로 끝난 줄 알고 떠나는 사람이 생긴다.
  */
 function Outputs({
   logId,
@@ -319,18 +382,16 @@ function Outputs({
   latestVersion: number | null;
   onDone: () => void;
 }) {
-  const [picked, setPicked] = useState<Picked[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function upload() {
+  async function receive(picked: Picked[]) {
     setError(null);
     try {
       for (let i = 0; i < picked.length; i += 1) {
-        setBusy(`올리는 중… ${i + 1}/${picked.length}`);
+        setBusy(picked.length > 1 ? `올리는 중 ${i + 1}/${picked.length}` : "올리는 중");
         await uploadImage(logId, picked[i], { role: "output", promptVersion: latestVersion });
       }
-      setPicked([]);
       onDone();
     } catch (e) {
       setError((e as Error).message);
@@ -340,15 +401,23 @@ function Outputs({
   }
 
   async function remove(imageId: string) {
-    await fetch(`/api/images/${imageId}`, { method: "DELETE" });
-    onDone();
+    if (!confirm("이 이미지를 뺄까요? 되돌릴 수 없어요.")) return;
+    setBusy("빼는 중");
+    try {
+      await fetch(`/api/images/${imageId}`, { method: "DELETE" });
+      onDone();
+    } finally {
+      setBusy(null);
+    }
   }
 
   return (
     <Sheet point eyebrow="OUTPUT" headline="만든 이미지를 올려 두세요">
+      {/* 올리는 동안 화면을 덮는다 — 같은 사진을 두 번 올리는 일을 막는다 */}
+      <BusyOverlay message={busy} />
+
       <p className="lead">
-        복사한 프롬프트로 만든 이미지를 여기 올려 두면, 어떤 프롬프트로 나왔는지와 함께
-        남아요.
+        복사한 프롬프트로 만든 이미지를 고르면 <strong>바로 올라가요.</strong>
         {latestVersion ? ` 지금 올리면 v${latestVersion} 에 묶입니다.` : ""}
       </p>
 
@@ -369,22 +438,9 @@ function Outputs({
         </div>
       ) : null}
 
-      <PhotoPicker value={picked} onChange={setPicked} max={6} label="결과 이미지 고르기" />
+      <PhotoPicker onReady={receive} max={6} label="결과 이미지 고르기" busy={Boolean(busy)} />
 
       {error ? <p style={errStyle}>{error}</p> : null}
-
-      {picked.length > 0 ? (
-        <div className="row row--wrap" style={{ gap: 10, marginTop: 14 }}>
-          <button
-            type="button"
-            className="btn btn--primary btn--sm"
-            onClick={() => void upload()}
-            disabled={Boolean(busy)}
-          >
-            {busy ?? `${picked.length}장 올리기 →`}
-          </button>
-        </div>
-      ) : null}
     </Sheet>
   );
 }
@@ -449,6 +505,53 @@ const cardHeadStyle: CSSProperties = {
 };
 const verStyle: CSSProperties = { fontSize: "0.82rem", fontWeight: 900, color: "var(--accent-ink)" };
 const verMetaStyle: CSSProperties = { fontSize: "0.7rem", color: "var(--text-muted)" };
+const baseStyle: CSSProperties = {
+  display: "flex",
+  gap: 11,
+  alignItems: "center",
+  padding: 9,
+  background: "var(--bg-secondary)",
+  borderRadius: 9,
+};
+const baseThumbStyle: CSSProperties = {
+  width: 46,
+  flex: "0 0 46px",
+  aspectRatio: "1 / 1",
+  objectFit: "cover",
+  display: "block",
+  borderRadius: 6,
+  background: "var(--bg-card)",
+};
+const baseThumbEmptyStyle: CSSProperties = {
+  display: "grid",
+  placeItems: "center",
+  fontSize: "0.6rem",
+  fontWeight: 700,
+  color: "var(--text-muted)",
+};
+const baseTagStyle: CSSProperties = {
+  display: "block",
+  fontSize: "0.63rem",
+  fontWeight: 700,
+  color: "var(--text-muted)",
+  letterSpacing: "0.02em",
+};
+const baseTitleStyle: CSSProperties = {
+  display: "block",
+  marginTop: 1,
+  fontSize: "0.8rem",
+  fontWeight: 800,
+  color: "var(--text-primary)",
+  lineHeight: 1.35,
+  wordBreak: "keep-all",
+};
+const baseMetaStyle: CSSProperties = {
+  margin: "2px 0 0",
+  fontSize: "0.66rem",
+  lineHeight: 1.5,
+  color: "var(--text-secondary)",
+  wordBreak: "break-all",
+};
 const requestStyle: CSSProperties = {
   margin: 0,
   fontSize: "0.82rem",

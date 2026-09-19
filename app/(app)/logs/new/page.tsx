@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Sheet } from "@/components/Sheet";
 import { MoodPicker, type PromptCard } from "@/components/MoodPicker";
 import { PhotoPicker, type Picked } from "@/components/PhotoPicker";
+import { BusyOverlay } from "@/components/BusyOverlay";
 import { RatioPicker } from "@/components/RatioPicker";
 import { uploadImage } from "@/lib/clientImage";
 import { DEFAULT_RATIO, type RatioId } from "@/lib/prompts/vocab";
@@ -30,6 +31,8 @@ export default function NewLogPage() {
   const [ratio, setRatio] = useState<RatioId>(DEFAULT_RATIO);
 
   const [step, setStep] = useState<string | null>(null);
+  /** 오래 걸리는 단계에만 붙는 한 줄 설명 */
+  const [stepDetail, setStepDetail] = useState<string | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
 
   const ready = Boolean(prompt) && photos.length > 0 && !step;
@@ -40,7 +43,8 @@ export default function NewLogPage() {
 
     let logId: string | null = null;
     try {
-      setStep("묶음을 만들고 있어요…");
+      setStepDetail(undefined);
+      setStep("묶음을 만들고 있어요");
       const made = await fetch("/api/logs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -50,12 +54,13 @@ export default function NewLogPage() {
       logId = made.id as string;
 
       for (let i = 0; i < photos.length; i += 1) {
-        setStep(`사진을 올리고 있어요… ${i + 1}/${photos.length}`);
+        setStep(`사진을 올리고 있어요 ${i + 1}/${photos.length}`);
         await uploadImage(logId, photos[i], { role: "input" });
       }
 
       /* 분석과 합성이 함께 일어난다. 10초쯤 걸리므로 무엇을 하는지 알려 준다 */
-      setStep("사진을 보고 프롬프트를 쓰고 있어요… (10초쯤 걸려요)");
+      setStep("사진 속 피사체를 읽고 프롬프트를 쓰고 있어요");
+      setStepDetail("10초쯤 걸려요. 창을 닫지 마세요.");
       const made2 = await fetch(`/api/logs/${logId}/prompts`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -74,12 +79,17 @@ export default function NewLogPage() {
           (logId ? " 올린 사진은 묶음에 남아 있어요. 묶음에서 다시 만들 수 있어요." : ""),
       );
       setStep(null);
+      setStepDetail(undefined);
       if (logId) router.push(`/logs/${logId}`);
     }
   }
 
   return (
     <>
+      {/* 누른 것이 먹었는지 몰라 두 번 누르는 일을 막는다 — 두 번 누르면
+          묶음도 둘, 생성 요청도 둘이다 */}
+      <BusyOverlay message={step} detail={stepDetail} />
+
       <Sheet
         point
         eyebrow="STEP 1"
@@ -135,7 +145,7 @@ export default function NewLogPage() {
 
             <div className="row row--wrap" style={{ gap: 10, justifyContent: "center", marginTop: 16 }}>
               <button type="button" className="btn btn--primary" onClick={() => void run()} disabled={!ready}>
-                {step ?? "프롬프트 만들기 →"}
+                프롬프트 만들기 →
               </button>
               <Link className="btn btn--ghost" href="/logs">
                 내 묶음

@@ -6,6 +6,8 @@ import { deleteKeys } from "@/lib/images";
 import { getLogModel } from "@/models/Log";
 import { getLogImageModel } from "@/models/LogImage";
 import { getLogPromptModel } from "@/models/LogPrompt";
+import { getPromptModel } from "@/models/Prompt";
+import { moodLabel } from "@/lib/prompts/vocab";
 
 /**
  * 묶음 하나 — 상세 / 제목·메모 수정 / 삭제.
@@ -34,6 +36,26 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
       getLogPromptModel().find({ logId: id, userId }).sort({ version: 1 }).lean().exec(),
     ]);
 
+    /*
+      **어느 기초 프롬프트에서 출발했는지**를 함께 준다 (2026-09-19 사용자 지정).
+      두 달 뒤에 열었을 때 "무엇을 골랐더라" 가 남아 있어야 한다.
+
+      ⚠️ 라이브러리에서 그 프롬프트가 내려가도(원저작자 요청) 묶음은 살아야 하므로
+      **없으면 없는 대로** 넘어간다. `log_prompts.mood` 에 분위기가 따로 남아 있어
+      최소한 무엇을 골랐는지는 안다.
+
+      ⚠️ `body`(기초 프롬프트 본문)는 **싣지 않는다.** 사용자가 받는 것은 완성된
+      프롬프트이지 기초가 아니다 → lib/prompts/library.ts
+    */
+    const baseIds = [...new Set(prompts.map((p) => p.basePromptId).filter(Boolean))];
+    const bases = baseIds.length
+      ? await getPromptModel()
+          .find({ _id: { $in: baseIds } }, { body: 0 })
+          .lean()
+          .exec()
+      : [];
+    const baseById = new Map(bases.map((b) => [String(b._id), b]));
+
     return NextResponse.json({
       ok: true,
       log: {
@@ -53,18 +75,36 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
         bytes: i.bytes,
         order: i.order,
       })),
-      prompts: prompts.map((p) => ({
-        id: String(p._id),
-        version: p.version,
-        request: p.request,
-        text: p.text,
-        summary: p.summary,
-        mood: p.mood,
-        ratio: p.ratio,
-        parentVersion: p.parentVersion,
-        basePromptId: p.basePromptId ? String(p.basePromptId) : null,
-        createdAt: p.createdAt,
-      })),
+      prompts: prompts.map((p) => {
+        const b = p.basePromptId ? baseById.get(String(p.basePromptId)) : null;
+        return {
+          id: String(p._id),
+          version: p.version,
+          request: p.request,
+          text: p.text,
+          summary: p.summary,
+          mood: p.mood,
+          moodKo: p.mood ? moodLabel(p.mood) : "",
+          ratio: p.ratio,
+          parentVersion: p.parentVersion,
+          /* 고른 기초 프롬프트 — 없어졌으면 null. 분위기는 위에 남아 있다 */
+          base: b
+            ? {
+                id: String(b._id),
+                title: b.titleKo || b.title || b.slug,
+                blurb: b.blurb || "",
+                thumb: (b.examples ?? []).find((e) => !e.broken)?.url ?? null,
+                credit: {
+                  author: b.sourceAuthor || "",
+                  link: b.sourceLink || "",
+                  license: b.license || "",
+                  modified: b.modified,
+                },
+              }
+            : null,
+          createdAt: p.createdAt,
+        };
+      }),
     });
   } catch (e) {
     return serverError(e);

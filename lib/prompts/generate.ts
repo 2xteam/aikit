@@ -186,15 +186,55 @@ function readResult(raw: unknown): ComposeResult {
  *
  * @returns 빠진 것들. 비어 있으면 통과
  */
+/**
+ * 신원 고정의 **네 문장**. 시스템 프롬프트가 이걸 토씨까지 그대로 넣으라고 시킨다.
+ *
+ * 한글로 내보내기로 하면서(2026-09-19 사용자 지정) 영어 문구로 검사할 수 없게 됐다.
+ * 문장을 여기 못 박아 두면 **검사와 지시가 같은 값을 본다** — 둘이 갈리면
+ * 검사는 통과하는데 프롬프트에는 없는 일이 생긴다.
+ * → lib/prompts/system.ts 의 HEADER 1
+ */
+const IDENTITY_LOCK_LINES = [
+  "Image 1 의 대상을 그대로 사용하세요.",
+  "얼굴을 새로 만들지 마세요.",
+  "보정하거나 다듬거나 나이나 인상을 바꾸지 마세요.",
+  "참조 이미지의 얼굴 구조와 머리카락, 피부를 그대로 유지하세요.",
+] as const;
+
+/**
+ * 반드시 있어야 하는 헤더. `6. TEXT` 는 사진에 문자가 없으면 빼도 되므로 뺐다.
+ *
+ * 한글 지시를 늘렸더니 모델이 **헤더를 통째로 흘리는 일**이 다시 생겼다
+ * (2026-09-19 실측: 신원 고정 네 문장만 남고 구조가 사라졌다). 뼈대를 보여
+ * 주는 것으로 고쳤지만, 검사에도 넣어 두어야 재시도가 걸린다.
+ */
+const REQUIRED_HEADERS = [
+  "1. SUBJECT",
+  "2. WARDROBE",
+  "3. POSE",
+  "4. SCENE",
+  "5. COLOUR",
+  "7. OUTPUT",
+] as const;
+
 function auditPrompt(prompt: string, ratio: string): string[] {
   const missing: string[] = [];
-  if (!/^\s*DO NOT\b/im.test(prompt)) missing.push("the DO NOT block");
-  if (!/do not generate a new face/i.test(prompt)) {
-    missing.push('the identity lock line "do not generate a new face"');
+  if (!/^\s*DO NOT\b/im.test(prompt)) missing.push('the "DO NOT:" block');
+
+  const absent = REQUIRED_HEADERS.filter((h) => !prompt.includes(h));
+  if (absent.length) missing.push(`these headers: ${absent.join(", ")}`);
+
+  /*
+    공백만 다른 경우까지 같게 본다. 모델이 조사나 띄어쓰기를 한 칸 바꾸는 일이
+    잦은데, 그걸 실패로 세면 멀쩡한 결과를 버리고 다시 부르게 된다.
+  */
+  const flat = prompt.replace(/\s+/g, "");
+  for (const line of IDENTITY_LOCK_LINES) {
+    if (!flat.includes(line.replace(/\s+/g, ""))) {
+      missing.push(`the identity-lock sentence "${line}"`);
+    }
   }
-  if (!/do not (restyle|beautify)/i.test(prompt)) {
-    missing.push("the no-restyle / no-beautify instruction");
-  }
+
   /* 사용자가 고른 비율. 이게 없으면 쓸 곳에 맞지 않는 구도가 나온다 */
   if (!prompt.includes(ratio)) missing.push(`the aspect ratio "${ratio}"`);
   return missing;
