@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { prepareImage } from "@/lib/clientImage";
+import { BusyOverlay } from "@/components/BusyOverlay";
 
 /**
  * 분위기를 **눈으로** 고른다 — 가로 슬라이드 2단 (2026-09-18 사용자 지정).
@@ -77,8 +78,14 @@ export function MoodPicker({
   const [items, setItems] = useState<PromptCard[] | null>(null);
   const [total, setTotal] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  /** 레퍼런스 이미지를 읽는 중 */
-  const [busy, setBusy] = useState(false);
+  /**
+   * 레퍼런스에서 분위기를 뽑는 중 — **지금 무엇을 하는지**를 담는다.
+   *
+   * 불리언이 아닌 이유는 단계가 둘이고 걸리는 시간이 다르기 때문이다.
+   * 줄이기는 큰 사진이면 몇 초, 뽑기는 OpenAI 호출이라 늘 몇 초다.
+   * "읽는 중" 하나로 뭉뚱그리면 멈춘 것처럼 보인다.
+   */
+  const [busy, setBusy] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const pickFile = () => fileRef.current?.click();
@@ -92,17 +99,26 @@ export function MoodPicker({
   async function extract(file: File | undefined) {
     if (!file) return;
     setError(null);
-    setBusy(true);
+    setBusy("이미지를 줄이고 있어요");
     try {
       /* 올리기 전에 줄인다 — 4.5MB 벽과 토큰 둘 다를 위해 */
       const prepared = await prepareImage(file);
 
+      setBusy("이미지에서 분위기를 뽑고 있어요");
       const form = new FormData();
       form.append("file", prepared.blob, file.name);
       const j = await fetch("/api/prompts/extract", { method: "POST", body: form }).then((r) =>
         r.json(),
       );
       if (!j.ok) throw new Error(j.error ?? "분위기를 뽑지 못했어요.");
+
+      /*
+        ⚠️ **넘기기 전에 내린다.** `onPick` 이 부모의 상태를 바꾸면 이 컴포넌트가
+        접힌 모습으로 갈아타는데, 그 갈래에는 오버레이가 없다. finally 에서
+        내리면 그 사이 한 프레임이 덮인 채로 남을 수 있다.
+        (에러 경로를 위해 finally 도 그대로 둔다)
+      */
+      setBusy(null);
 
       onPick({
         id: "",
@@ -127,7 +143,7 @@ export function MoodPicker({
     } catch (e) {
       setError((e as Error).message);
     } finally {
-      setBusy(false);
+      setBusy(null);
       if (fileRef.current) fileRef.current.value = "";
     }
   }
@@ -264,6 +280,8 @@ export function MoodPicker({
   return (
     <>
       <Scoped />
+      {/* OpenAI 호출이라 몇 초 걸린다. 덮지 않으면 또 고른다 */}
+      <BusyOverlay message={busy} detail="몇 초 걸려요. 창을 닫지 마세요." />
       <input
         ref={fileRef}
         type="file"
@@ -276,9 +294,9 @@ export function MoodPicker({
           라이브러리에 원하는 느낌이 없을 때의 길 (2026-09-20 사용자 지정).
           **맨 앞에 둔다** — 12칸을 다 넘겨 보고 나서야 발견하면 이미 늦다.
         */}
-        <button type="button" style={extractTileStyle} onClick={() => pickFile()} disabled={busy}>
+        <button type="button" style={extractTileStyle} onClick={() => pickFile()} disabled={Boolean(busy)}>
           <span style={{ ...thumbStyle, ...extractThumbStyle }} aria-hidden="true">
-            {busy ? "읽는 중…" : "＋"}
+            ＋
           </span>
           <span style={tileBodyStyle}>
             <strong style={tileTitleStyle}>이미지에서 뽑기</strong>
