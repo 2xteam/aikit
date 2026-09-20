@@ -87,7 +87,17 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
           moodKo: p.mood ? moodLabel(p.mood) : "",
           ratio: p.ratio,
           parentVersion: p.parentVersion,
-          /* 고른 기초 프롬프트 — 없어졌으면 null. 분위기는 위에 남아 있다 */
+          /*
+            고른 기초 프롬프트. 두 갈래다 —
+              library  라이브러리에서 골랐다. 썸네일과 출처가 있다.
+                       내려갔으면 `base` 가 null 이지만 제목은 baseTitle 에 남는다
+              image    레퍼런스 이미지에서 뽑았다. 그 이미지는 **저장하지 않았으므로**
+                       썸네일이 없다. 본문은 baseText 에 있다
+          */
+          baseSource: p.baseSource ?? "library",
+          baseTitle: p.baseTitle || (b ? b.titleKo || b.title || b.slug : ""),
+          /* 뽑아낸 본문은 보여 준다 — 어디에도 다시 찾을 곳이 없다 */
+          baseText: p.baseSource === "image" ? p.baseText : "",
           base: b
             ? {
                 id: String(b._id),

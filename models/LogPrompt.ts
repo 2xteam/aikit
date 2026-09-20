@@ -45,6 +45,23 @@ export type LogPromptDocument = {
    * 수정 요청(v2+)도 같은 기초를 물려받는다.
    */
   basePromptId: Types.ObjectId | null;
+  /**
+   * 기초 프롬프트가 **어디서 왔는가** (2026-09-20).
+   *
+   * `library` 라이브러리 720건에서 골랐다 → `basePromptId` 로 다시 찾는다
+   * `image`   레퍼런스 이미지에서 뽑았다 → 그 이미지는 **저장하지 않았고**
+   *           본문도 DB 에 없다. 그래서 `baseText` 에 통째로 남긴다
+   */
+  baseSource: "library" | "image";
+  /** 화면에 보일 이름. 둘 다 채운다 — 라이브러리 것이 내려가도 제목은 남는다 */
+  baseTitle: string;
+  /**
+   * 뽑아낸 기초 프롬프트 본문. `baseSource: "image"` 일 때만 채운다.
+   *
+   * 라이브러리 것은 비워 둔다 — `prompts` 컬렉션에 원본이 있고, 여기 복사해
+   * 두면 라이브러리를 고쳐도 옛 사본이 남아 어느 쪽이 맞는지 알 수 없게 된다.
+   */
+  baseText: string;
   /** 고른 분위기. basePromptId 를 지워도 무엇을 골랐는지는 남는다 */
   mood: string;
   /**
@@ -83,6 +100,9 @@ const LogPromptSchema = new Schema<LogPromptDocument>(
       라이브러리에서 프롬프트가 내려가도(원저작자 요청) 사용자의 기록은 그대로다.
     */
     basePromptId: { type: Schema.Types.ObjectId, default: null },
+    baseSource: { type: String, enum: ["library", "image"], default: "library" },
+    baseTitle: { type: String, default: "" },
+    baseText: { type: String, default: "" },
     mood: { type: String, default: "" },
     ratio: { type: String, default: "4:5" },
     text: { type: String, required: true },

@@ -13,7 +13,7 @@ import {
   type ImageInput,
 } from "@/lib/prompts/generate";
 import { getPromptForGeneration } from "@/lib/prompts/library";
-import { isRatioId, moodLabel, DEFAULT_RATIO } from "@/lib/prompts/vocab";
+import { isMoodId, isRatioId, moodLabel, DEFAULT_RATIO } from "@/lib/prompts/vocab";
 import { getLogModel } from "@/models/Log";
 import { getLogImageModel } from "@/models/LogImage";
 import { getLogPromptModel } from "@/models/LogPrompt";
@@ -48,7 +48,15 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   if ("error" in found) return found.error;
   const userId = found.viewer.userId;
 
-  let body: { basePromptId?: string; request?: string; ratio?: string };
+  let body: {
+    basePromptId?: string;
+    /** 레퍼런스 이미지에서 뽑은 기초 프롬프트 — 라이브러리 대신 쓴다 */
+    baseText?: string;
+    baseTitle?: string;
+    baseMood?: string;
+    request?: string;
+    ratio?: string;
+  };
   try {
     body = await req.json();
   } catch {
@@ -72,18 +80,39 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
 
     let result;
     let basePromptId: Types.ObjectId | null = null;
+    let baseSource: "library" | "image" = "library";
+    let baseTitle = "";
+    let baseText = "";
     let mood = "";
 
     if (!last) {
       /* ── v1 — 리소스 셋을 합친다 ── */
-      if (!body.basePromptId || !Types.ObjectId.isValid(body.basePromptId)) {
-        return badRequest("분위기를 먼저 골라 주세요.", { field: "basePromptId" });
-      }
-      const base = await getPromptForGeneration(body.basePromptId);
-      if (!base) return badRequest("고른 프롬프트를 찾지 못했어요. 다시 골라 주세요.");
 
-      basePromptId = base._id;
-      mood = base.mood ?? "";
+      /*
+        기초 프롬프트는 두 갈래로 온다 (2026-09-20) —
+          라이브러리에서 고른 것  → basePromptId
+          레퍼런스 이미지에서 뽑은 것 → baseText (그 이미지는 저장하지 않았다)
+      */
+      let baseBody: string;
+
+      if (body.baseText?.trim()) {
+        baseSource = "image";
+        baseText = body.baseText.trim().slice(0, 4000);
+        baseBody = baseText;
+        baseTitle = (body.baseTitle ?? "").trim().slice(0, 60) || "사진에서 뽑은 분위기";
+        mood = isMoodId(body.baseMood) ? body.baseMood : "";
+      } else {
+        if (!body.basePromptId || !Types.ObjectId.isValid(body.basePromptId)) {
+          return badRequest("분위기를 먼저 골라 주세요.", { field: "basePromptId" });
+        }
+        const base = await getPromptForGeneration(body.basePromptId);
+        if (!base) return badRequest("고른 프롬프트를 찾지 못했어요. 다시 골라 주세요.");
+
+        basePromptId = base._id;
+        mood = base.mood ?? "";
+        baseTitle = base.titleKo || base.title || base.slug;
+        baseBody = base.body;
+      }
 
       const images = await getLogImageModel()
         .find({ logId: id, userId, role: "input" })
@@ -116,16 +145,20 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
       */
       const photo = await analyzePhotos(inputs);
       result = await composePrompt({
-        base: base.body,
+        base: baseBody,
         photo,
         request,
         ratio,
-        moodKo: moodLabel(base.mood ?? ""),
+        /* 뽑아낸 기초는 분위기가 없을 수도 있다 — 그러면 제목을 대신 준다 */
+        moodKo: mood ? moodLabel(mood) : baseTitle,
       });
     } else {
       /* ── v2+ — 직전 버전을 고친다 ── */
       if (!request) return badRequest("무엇을 고칠지 적어 주세요.", { field: "request" });
       basePromptId = last.basePromptId ?? null;
+      baseSource = last.baseSource ?? "library";
+      baseTitle = last.baseTitle ?? "";
+      baseText = last.baseText ?? "";
       mood = last.mood ?? "";
       result = await revisePrompt({ previous: last.text, request, ratio });
     }
@@ -139,6 +172,9 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
       text: result.prompt,
       summary: result.summary,
       basePromptId,
+      baseSource,
+      baseTitle,
+      baseText,
       mood,
       ratio,
       parentVersion: last?.version ?? null,

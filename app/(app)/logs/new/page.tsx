@@ -64,7 +64,18 @@ export default function NewLogPage() {
       const made2 = await fetch(`/api/logs/${logId}/prompts`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ basePromptId: prompt.id, request: wish, ratio }),
+        body: JSON.stringify(
+          /* 뽑아낸 기초는 DB 에 없다 — 본문을 함께 보낸다 → components/MoodPicker.tsx */
+          prompt.extracted
+            ? {
+                baseText: prompt.extracted.body,
+                baseTitle: prompt.title,
+                baseMood: prompt.mood,
+                request: wish,
+                ratio,
+              }
+            : { basePromptId: prompt.id, request: wish, ratio },
+        ),
       }).then((r) => r.json());
       if (!made2.ok) throw new Error(made2.error ?? "프롬프트를 만들지 못했어요.");
 

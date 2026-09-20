@@ -301,6 +301,95 @@ Output JSON only:
 {"prompt":"...","summary":"...","changed":"한 줄 한국어로 무엇을 바꿨는지"}`;
 
 /**
+ * A-4. **레퍼런스 이미지에서 기초 프롬프트를 뽑는다** (2026-09-20 사용자 지정).
+ *
+ * 라이브러리 720건에 원하는 느낌이 없을 때, 어디선가 본 이미지를 올려
+ * "이 분위기" 를 기초 프롬프트로 만든다.
+ *
+ * ⚠️ **A-1 과 정반대다.** 헷갈리면 앱이 망가진다.
+ *
+ * | | 무엇을 뽑나 | 무엇을 버리나 |
+ * |---|---|---|
+ * | A-1 사진 | **피사체** — 얼굴·옷·로고·신발 | 배경·조명·색·구도 |
+ * | A-4 레퍼런스 | **장면·조명·색·구도·스타일** | **피사체** |
+ *
+ * 이 둘이 한 묶음에서 만난다 — 레퍼런스의 분위기에 내 사진의 피사체를 얹는다.
+ * 그러니 A-4 가 피사체를 물고 오면 나중에 내 인물과 **경쟁한다.**
+ *
+ * ⚠️ **남의 작품일 수 있다.** 작가 이름·브랜드·특정 작품을 지목하지 않는다.
+ * 보이는 조형만 말로 옮긴다 — "누구의 그림처럼" 이 아니라 "어떤 빛과 색인지".
+ * 레퍼런스 이미지는 **저장하지 않는다.** 분석만 하고 버린다
+ * → app/api/prompts/extract/route.ts
+ */
+export const EXTRACT_SYSTEM = `You look at one reference image and write a reusable
+image-generation prompt that captures ITS MOOD — the look, not the subject.
+You never generate images.
+
+WHAT YOU CAPTURE
+Lighting (source, direction, hardness, time of day), colour palette and
+grading, atmosphere and weather, camera language (lens feel, angle, depth of
+field, distance), composition and negative space, surface and texture
+(grain, gloss, haze), overall finish (photoreal, illustration, print).
+
+WHAT YOU DISCARD — THIS IS HALF THE JOB
+**The subject.** Whoever or whatever the picture is of does not matter and
+must not appear. No person, no face, no clothing, no animal, no product, no
+named object. The prompt you write will be reused with somebody else's
+photograph, and any subject you leave behind will fight with theirs.
+
+Write the subject slot as a neutral placeholder — "피사체", "대상" — so the
+next step can drop a real subject into it.
+
+NEVER
+- Name a real artist, photographer, studio, brand, film or artwork, and never
+  say "in the style of" anyone. Describe the light and colour instead.
+- Name a real place, event or date visible in the image.
+- Copy text you see in the image.
+
+OUTPUT — Korean, except camera and lens terms which stay English.
+
+"title"    4-10 Korean words naming the mood. Not a description of the
+           subject. e.g. "비 온 뒤 네온 거리" — not "우산 쓴 여자"
+"mood"     exactly one id from the allowed list, the closest match
+"body"     the reusable prompt. Flowing Korean prose, no headers and no
+           bullet list — this is source material that gets rewritten later,
+           not a final prompt.
+
+           **500-900 characters. A short answer is a failed answer.** It is
+           reused to build a full image prompt, so thin material produces a
+           thin result. Reach the length by being specific, never by padding:
+
+             장면      어떤 종류의 공간인지, 무엇이 배경을 이루는지, 공기와 날씨
+             조명      광원의 종류와 개수, 방향, 세기, 그림자의 단단함, 반사와 하이라이트
+             색        지배색 두세 가지를 이름으로, 채도와 대비, 그레이딩의 방향
+             카메라    렌즈 느낌(35mm 같은 영문 표기), 높이와 각도, 거리, 심도
+             구도      피사체가 화면의 어디에 놓이는지, 여백이 어디에 남는지
+             질감      그레인, 광택, 안개, 종이나 필름의 결
+             마감      실사인지 일러스트인지 인쇄물인지, 전체적인 완성도
+
+           **Write at least one full sentence for each of the seven.** Seven
+           sentences is the floor, not the target. If the reference is plain,
+           say what is plain about it — "그림자가 거의 없는 균일한 빛" is
+           specific; "부드러운 조명" alone is not.
+
+           Never name a body part (얼굴 · 머리 · 손 · 어깨). The subject may
+           turn out to be a bag or a dog. Say "피사체" and describe where the
+           light lands on it, not on a face.
+"summary"  one Korean sentence, 해요체, on what this mood is good for.
+
+If the image has no usable look — a blank wall, a screenshot of text, a blurry
+mess — set "body" to an empty string and say why in "summary".
+
+Output JSON only:
+{"title":"...","mood":"...","body":"...","summary":"..."}`;
+
+export function extractUserText(moodIds: readonly string[]): string {
+  return `Write a reusable mood prompt from this reference image.
+
+Allowed "mood" values: ${moodIds.join(" | ")}`;
+}
+
+/**
  * 길이 예산.
  *
  * 딥링크를 접었으므로(2026-09-18) URL 인코딩 상한은 사라졌다. 남은 이유는

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
+import { prepareImage } from "@/lib/clientImage";
 
 /**
  * 분위기를 **눈으로** 고른다 — 가로 슬라이드 2단 (2026-09-18 사용자 지정).
@@ -43,6 +44,13 @@ export type PromptCard = {
   verified: boolean;
   featured: boolean;
   credit: { author: string; link: string; license: string; modified: boolean };
+  /**
+   * 레퍼런스 이미지에서 뽑은 것 (2026-09-20).
+   *
+   * 라이브러리 것과 달리 **DB 에 없다.** 그래서 본문을 여기 들고 있다가
+   * 생성 요청에 함께 보낸다. `id` 는 비어 있다.
+   */
+  extracted?: { body: string; moodKo: string };
 };
 
 export function MoodPicker({
@@ -58,6 +66,55 @@ export function MoodPicker({
   const [items, setItems] = useState<PromptCard[] | null>(null);
   const [total, setTotal] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  /** 레퍼런스 이미지를 읽는 중 */
+  const [busy, setBusy] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const pickFile = () => fileRef.current?.click();
+
+  /**
+   * 레퍼런스 이미지 → 기초 프롬프트.
+   *
+   * ⚠️ **이미지를 저장하지 않는다.** 분석만 하고 버린다 — 남의 작품일 수 있고,
+   * 남길 값은 뽑아낸 프롬프트이지 원본이 아니다
+   * → app/api/prompts/extract/route.ts
+   */
+  async function extract(file: File | undefined) {
+    if (!file) return;
+    setError(null);
+    setBusy(true);
+    try {
+      /* 올리기 전에 줄인다 — 4.5MB 벽과 토큰 둘 다를 위해 */
+      const prepared = await prepareImage(file);
+      URL.revokeObjectURL(prepared.previewUrl);
+
+      const form = new FormData();
+      form.append("file", prepared.blob, file.name);
+      const j = await fetch("/api/prompts/extract", { method: "POST", body: form }).then((r) =>
+        r.json(),
+      );
+      if (!j.ok) throw new Error(j.error ?? "분위기를 뽑지 못했어요.");
+
+      onPick({
+        id: "",
+        title: j.prompt.title,
+        blurb: j.prompt.summary,
+        mood: j.prompt.mood,
+        charCount: j.prompt.body.length,
+        examples: [],
+        suggestedRatio: null,
+        verified: false,
+        featured: false,
+        credit: { author: "", link: "", license: "", modified: false },
+        extracted: { body: j.prompt.body, moodKo: j.prompt.moodKo },
+      });
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  }
 
   useEffect(() => {
     let alive = true;
@@ -109,18 +166,31 @@ export function MoodPicker({
       <>
         <Scoped />
         <div style={pickedStyle}>
-          <Thumb url={selected.examples[0] ?? null} style={pickedThumbStyle} />
+          {selected.extracted ? (
+            <span style={{ ...pickedThumbStyle, ...extractThumbStyle, fontSize: "1.1rem" }} aria-hidden="true">
+              ✦
+            </span>
+          ) : (
+            <Thumb url={selected.examples[0] ?? null} style={pickedThumbStyle} />
+          )}
           <div style={{ flex: 1, minWidth: 0 }}>
             <strong style={pickedTitleStyle}>{selected.title}</strong>
             <p style={pickedMetaStyle}>
-              {moodKo(moods, selected.mood)}
+              {selected.extracted
+                ? `내 이미지에서 뽑음${selected.extracted.moodKo ? ` · ${selected.extracted.moodKo}` : ""}`
+                : moodKo(moods, selected.mood)}
               {selected.suggestedRatio ? ` · 원래 ${selected.suggestedRatio}` : ""}
             </p>
-            <p style={creditStyle}>
-              출처 {selected.credit.author || "원작자"}
-              {selected.credit.license ? ` · ${selected.credit.license}` : ""}
-              {selected.credit.modified ? " · 수정함" : ""}
-            </p>
+            {selected.extracted ? (
+              /* 올린 이미지는 저장하지 않았다. 그 사실을 알려 준다 */
+              <p style={creditStyle}>올린 이미지는 저장하지 않았어요. 뽑아낸 분위기만 남아요.</p>
+            ) : (
+              <p style={creditStyle}>
+                출처 {selected.credit.author || "원작자"}
+                {selected.credit.license ? ` · ${selected.credit.license}` : ""}
+                {selected.credit.modified ? " · 수정함" : ""}
+              </p>
+            )}
           </div>
           <button
             type="button"
@@ -178,7 +248,28 @@ export function MoodPicker({
   return (
     <>
       <Scoped />
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        onChange={(e) => void extract(e.target.files?.[0])}
+        style={{ display: "none" }}
+      />
       <Rail label="분위기">
+        {/*
+          라이브러리에 원하는 느낌이 없을 때의 길 (2026-09-20 사용자 지정).
+          **맨 앞에 둔다** — 12칸을 다 넘겨 보고 나서야 발견하면 이미 늦다.
+        */}
+        <button type="button" style={extractTileStyle} onClick={() => pickFile()} disabled={busy}>
+          <span style={{ ...thumbStyle, ...extractThumbStyle }} aria-hidden="true">
+            {busy ? "읽는 중…" : "＋"}
+          </span>
+          <span style={tileBodyStyle}>
+            <strong style={tileTitleStyle}>이미지에서 뽑기</strong>
+            <span style={tileHintStyle}>원하는 느낌의 사진을 올리면 그 분위기로 만들어요</span>
+          </span>
+        </button>
+
         {moods.map((m) => (
           <button
             key={m.id}
@@ -441,6 +532,30 @@ const tileCountStyle: CSSProperties = {
   fontSize: "0.68rem",
   fontWeight: 700,
   color: "var(--accent-ink)",
+};
+
+const extractTileStyle: CSSProperties = {
+  flex: "0 0 136px",
+  width: 136,
+  display: "flex",
+  flexDirection: "column",
+  textAlign: "left",
+  padding: 0,
+  overflow: "hidden",
+  background: "var(--bg-card)",
+  /* 점선으로 "여기에 올린다" 를 알린다 — 다른 칸과 성격이 다르다 */
+  border: "1px dashed var(--border-strong)",
+  borderRadius: "var(--radius-sm)",
+  cursor: "pointer",
+};
+
+const extractThumbStyle: CSSProperties = {
+  display: "grid",
+  placeItems: "center",
+  fontSize: "1.5rem",
+  fontWeight: 700,
+  color: "var(--accent-ink)",
+  background: "var(--accent-subtle)",
 };
 
 const crumbStyle: CSSProperties = {

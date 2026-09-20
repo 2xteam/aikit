@@ -2,6 +2,8 @@ import {
   ANALYZE_SYSTEM,
   analyzeUserText,
   COMPOSE_SYSTEM,
+  EXTRACT_SYSTEM,
+  extractUserText,
   fillMaxChars,
   MAX_PROMPT_CHARS,
   REVISE_SYSTEM,
@@ -161,6 +163,65 @@ export async function analyzePhotos(images: ImageInput[]): Promise<unknown> {
     return { images: [] };
   }
   return obj;
+}
+
+/**
+ * A-4. 레퍼런스 이미지 → 기초 프롬프트.
+ *
+ * ⚠️ **A-1 과 정반대다** — 여기서는 장면·조명·색만 뽑고 **피사체를 버린다.**
+ * 뽑은 것은 나중에 사용자의 사진 속 피사체와 합쳐지므로, 여기에 피사체가
+ * 남아 있으면 둘이 싸운다 → lib/prompts/system.ts 의 EXTRACT_SYSTEM
+ */
+export type ExtractResult = {
+  title: string;
+  mood: string;
+  body: string;
+  summary: string;
+};
+
+export async function extractMoodPrompt(
+  image: ImageInput,
+  moodIds: readonly string[],
+): Promise<ExtractResult> {
+  const raw = (await callJson(
+    VISION_MODEL(),
+    [
+      { role: "system", content: EXTRACT_SYSTEM },
+      {
+        role: "user",
+        content: [
+          { type: "text", text: extractUserText(moodIds) },
+          /* 조명·색·질감을 읽어야 하므로 여기도 high 다 */
+          { type: "image_url", image_url: { url: toDataUrl(image), detail: "high" } },
+        ],
+      },
+    ],
+    /* 분류가 아니라 글쓰기라 0 은 뻣뻣하다. 합성(A-2)과 같은 값 */
+    0.4,
+  )) as Record<string, unknown> | null;
+
+  const o = raw ?? {};
+  const body = typeof o.body === "string" ? o.body.trim() : "";
+  const summary = typeof o.summary === "string" ? o.summary.trim() : "";
+
+  if (!body) {
+    /*
+      쓸 만한 분위기가 없는 이미지다(빈 벽·글자 스크린샷·흔들린 사진).
+      모델이 이유를 적어 줬으면 그대로 보여 준다 — "실패했다" 보다 낫다.
+    */
+    throw new PromptGenerationError(
+      summary || "이 이미지에서는 분위기를 뽑기 어려워요. 다른 이미지로 해 볼까요?",
+      422,
+    );
+  }
+
+  const mood = typeof o.mood === "string" && moodIds.includes(o.mood) ? o.mood : "";
+  return {
+    title: (typeof o.title === "string" ? o.title.trim() : "").slice(0, 60) || "사진에서 뽑은 분위기",
+    mood,
+    body: body.slice(0, MAX_PROMPT_CHARS),
+    summary,
+  };
 }
 
 export type ComposeResult = { prompt: string; summary: string; changed: string };
