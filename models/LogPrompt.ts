@@ -62,6 +62,15 @@ export type LogPromptDocument = {
    * 두면 라이브러리를 고쳐도 옛 사본이 남아 어느 쪽이 맞는지 알 수 없게 된다.
    */
   baseText: string;
+  /**
+   * 분위기를 뽑는 데 쓴 **레퍼런스 이미지** (`log_images` 의 `_id`).
+   *
+   * `baseSource: "image"` 일 때만 채운다. 이게 없으면 "무엇을 보고 만들었더라" 를
+   * 잃는다 — 그걸 잃지 않으려고 만든 앱이다 (2026-09-20 사용자 지정).
+   *
+   * 지운 이미지를 가리킬 수 있다. 화면은 **없으면 없는 대로** 그린다.
+   */
+  referenceImageId: Types.ObjectId | null;
   /** 고른 분위기. basePromptId 를 지워도 무엇을 골랐는지는 남는다 */
   mood: string;
   /**
@@ -103,6 +112,7 @@ const LogPromptSchema = new Schema<LogPromptDocument>(
     baseSource: { type: String, enum: ["library", "image"], default: "library" },
     baseTitle: { type: String, default: "" },
     baseText: { type: String, default: "" },
+    referenceImageId: { type: Schema.Types.ObjectId, default: null },
     mood: { type: String, default: "" },
     ratio: { type: String, default: "4:5" },
     text: { type: String, required: true },

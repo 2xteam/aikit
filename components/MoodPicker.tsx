@@ -50,7 +50,18 @@ export type PromptCard = {
    * 라이브러리 것과 달리 **DB 에 없다.** 그래서 본문을 여기 들고 있다가
    * 생성 요청에 함께 보낸다. `id` 는 비어 있다.
    */
-  extracted?: { body: string; moodKo: string };
+  extracted?: {
+    body: string;
+    moodKo: string;
+    /**
+     * 분위기를 뽑는 데 쓴 이미지. 묶음이 생기면 `role: "reference"` 로 올린다
+     * (2026-09-20 사용자 지정) — 지금은 묶음이 없어 붙일 곳이 없다.
+     */
+    file: Blob;
+    previewUrl: string;
+    width: number;
+    height: number;
+  };
 };
 
 export function MoodPicker({
@@ -75,9 +86,8 @@ export function MoodPicker({
   /**
    * 레퍼런스 이미지 → 기초 프롬프트.
    *
-   * ⚠️ **이미지를 저장하지 않는다.** 분석만 하고 버린다 — 남의 작품일 수 있고,
-   * 남길 값은 뽑아낸 프롬프트이지 원본이 아니다
-   * → app/api/prompts/extract/route.ts
+   * 줄인 파일을 **들고 있다가** 묶음이 생기면 함께 올린다 — 지금은 묶음이 없어
+   * 붙일 곳이 없다 → app/(app)/logs/new/page.tsx
    */
   async function extract(file: File | undefined) {
     if (!file) return;
@@ -86,7 +96,6 @@ export function MoodPicker({
     try {
       /* 올리기 전에 줄인다 — 4.5MB 벽과 토큰 둘 다를 위해 */
       const prepared = await prepareImage(file);
-      URL.revokeObjectURL(prepared.previewUrl);
 
       const form = new FormData();
       form.append("file", prepared.blob, file.name);
@@ -106,7 +115,14 @@ export function MoodPicker({
         verified: false,
         featured: false,
         credit: { author: "", link: "", license: "", modified: false },
-        extracted: { body: j.prompt.body, moodKo: j.prompt.moodKo },
+        extracted: {
+          body: j.prompt.body,
+          moodKo: j.prompt.moodKo,
+          file: prepared.blob,
+          previewUrl: prepared.previewUrl,
+          width: prepared.width,
+          height: prepared.height,
+        },
       });
     } catch (e) {
       setError((e as Error).message);
@@ -167,9 +183,9 @@ export function MoodPicker({
         <Scoped />
         <div style={pickedStyle}>
           {selected.extracted ? (
-            <span style={{ ...pickedThumbStyle, ...extractThumbStyle, fontSize: "1.1rem" }} aria-hidden="true">
-              ✦
-            </span>
+            /* 내가 올린 레퍼런스를 그대로 보여 준다 — 무엇을 보고 골랐는지 */
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={selected.extracted.previewUrl} alt="" style={pickedThumbStyle} />
           ) : (
             <Thumb url={selected.examples[0] ?? null} style={pickedThumbStyle} />
           )}
@@ -183,7 +199,7 @@ export function MoodPicker({
             </p>
             {selected.extracted ? (
               /* 올린 이미지는 저장하지 않았다. 그 사실을 알려 준다 */
-              <p style={creditStyle}>올린 이미지는 저장하지 않았어요. 뽑아낸 분위기만 남아요.</p>
+              <p style={creditStyle}>올린 이미지는 묶음에 함께 남아요.</p>
             ) : (
               <p style={creditStyle}>
                 출처 {selected.credit.author || "원작자"}

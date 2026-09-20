@@ -8,6 +8,12 @@ import { defineModel } from "@/lib/model";
  * |---|---|
  * | `input` | 사용자가 프롬프트를 만들려고 올린 원본 사진 |
  * | `output` | 다른 AI 에서 만들어 되가져온 결과 이미지 |
+ * | `reference` | **분위기를 뽑는 데 쓴 레퍼런스 이미지** (2026-09-20) |
+ *
+ * ⚠️ 레퍼런스는 처음에 "남의 작품일 수 있으니 저장하지 않는다" 로 두었는데,
+ * **입력 사진과 다를 것이 없다** — 그것도 남의 사진일 수 있고 같은 비공개
+ * 버킷에 본인만 보게 들어간다. 기록하는 앱에서 "무엇을 보고 만들었는지" 를
+ * 잃는 쪽이 더 나쁘다. 남긴다 (2026-09-20 사용자 지정).
  *
  * ⚠️ **`r2Key` 를 API 응답에 절대 싣지 않는다.** 이미지는 언제나 앱 라우트
  * (`GET /api/img/<_id>`)가 세션을 확인한 뒤 스트리밍한다. 객체 URL 이 한 번
@@ -18,7 +24,7 @@ import { defineModel } from "@/lib/model";
  * 않으면서 용량만 먹는다.
  */
 
-export type LogImageRole = "input" | "output";
+export type LogImageRole = "input" | "output" | "reference";
 
 export type LogImageDocument = {
   _id: Types.ObjectId;
@@ -26,7 +32,7 @@ export type LogImageDocument = {
   userId: string;
   role: LogImageRole;
   /**
-   * 이 결과 이미지를 **몇 번 버전으로** 만들었는가. `input` 은 언제나 null.
+   * 이 결과 이미지를 **몇 번 버전으로** 만들었는가. `input`·`reference` 는 null.
    *
    * 프롬프트를 고쳐 가며 여러 장을 만드는 것이 이 앱의 정상 흐름이라,
    * 이 값이 없으면 두 달 뒤에 "이 이미지가 어느 프롬프트에서 나왔는지" 를
@@ -56,7 +62,7 @@ const LogImageSchema = new Schema<LogImageDocument>(
     logId: { type: Schema.Types.ObjectId, required: true, index: true },
     /* 부모를 한 번 더 읽지 않고 소유자를 확인하려고 여기에도 둔다 */
     userId: { type: String, required: true, index: true },
-    role: { type: String, enum: ["input", "output"], required: true },
+    role: { type: String, enum: ["input", "output", "reference"], required: true },
     promptVersion: { type: Number, default: null },
     r2Key: { type: String, required: true },
     contentType: { type: String, default: "image/jpeg" },
@@ -81,6 +87,9 @@ export function getLogImageModel(): Model<LogImageDocument> {
  *
  * **결과 이미지 우선, 없으면 입력 사진.** 목록에서 보고 싶은 것은 "무엇을 만들었나"
  * 이지 "무엇을 넣었나" 가 아니다. 아직 결과를 안 올린 묶음만 입력 사진을 보여 준다.
+ *
+ * ⚠️ **레퍼런스는 대표가 되지 않는다.** 내가 만든 것이 아니라 보고 참고한 것이라,
+ * 목록에서 그게 대표로 뜨면 남의 그림이 내 묶음의 얼굴이 된다.
  *
  * 같은 role 안에서는 **먼저 올린 것**을 쓴다 — 목록을 열 때마다 대표 그림이
  * 바뀌면 같은 묶음을 못 알아본다.

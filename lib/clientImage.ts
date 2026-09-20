@@ -71,7 +71,11 @@ export async function prepareImage(file: File): Promise<PreparedImage> {
 export function uploadImage(
   logId: string,
   prepared: PreparedImage,
-  opts: { role: "input" | "output"; promptVersion?: number | null; onProgress?: (p: number) => void },
+  opts: {
+    role: "input" | "output" | "reference";
+    promptVersion?: number | null;
+    onProgress?: (p: number) => void;
+  },
 ): Promise<{ id: string }> {
   const form = new FormData();
   const name = prepared.blob instanceof File ? prepared.blob.name : "photo.jpg";

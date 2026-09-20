@@ -54,6 +54,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     baseText?: string;
     baseTitle?: string;
     baseMood?: string;
+    /** 분위기를 뽑는 데 쓴 레퍼런스 이미지 (role: reference 로 먼저 올린다) */
+    referenceImageId?: string;
     request?: string;
     ratio?: string;
   };
@@ -83,6 +85,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     let baseSource: "library" | "image" = "library";
     let baseTitle = "";
     let baseText = "";
+    let referenceImageId: Types.ObjectId | null = null;
     let mood = "";
 
     if (!last) {
@@ -101,6 +104,14 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
         baseBody = baseText;
         baseTitle = (body.baseTitle ?? "").trim().slice(0, 60) || "사진에서 뽑은 분위기";
         mood = isMoodId(body.baseMood) ? body.baseMood : "";
+        /* 남의 id 를 넣어도 소용없게 — 이 묶음의 것만 받는다 */
+        if (body.referenceImageId && Types.ObjectId.isValid(body.referenceImageId)) {
+          const ref = await getLogImageModel()
+            .findOne({ _id: body.referenceImageId, logId: id, userId, role: "reference" }, { _id: 1 })
+            .lean()
+            .exec();
+          referenceImageId = ref?._id ?? null;
+        }
       } else {
         if (!body.basePromptId || !Types.ObjectId.isValid(body.basePromptId)) {
           return badRequest("분위기를 먼저 골라 주세요.", { field: "basePromptId" });
@@ -159,6 +170,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
       baseSource = last.baseSource ?? "library";
       baseTitle = last.baseTitle ?? "";
       baseText = last.baseText ?? "";
+      /* 고쳐도 무엇을 보고 시작했는지는 물려받는다 */
+      referenceImageId = last.referenceImageId ?? null;
       mood = last.mood ?? "";
       result = await revisePrompt({ previous: last.text, request, ratio });
     }
@@ -175,6 +188,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
       baseSource,
       baseTitle,
       baseText,
+      referenceImageId,
       mood,
       ratio,
       parentVersion: last?.version ?? null,

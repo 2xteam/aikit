@@ -53,6 +53,31 @@ export default function NewLogPage() {
       if (!made.ok) throw new Error(made.error ?? "묶음을 만들지 못했어요.");
       logId = made.id as string;
 
+      /*
+        레퍼런스를 **먼저** 올린다 (2026-09-20 사용자 지정). 분위기를 뽑을 때는
+        묶음이 없어 붙일 곳이 없었으므로, 화면이 파일을 들고 있다가 여기서 올린다.
+        실패해도 생성은 막지 않는다 — 기록이 빠질 뿐 프롬프트는 이미 뽑혀 있다.
+      */
+      let referenceImageId: string | null = null;
+      if (prompt.extracted) {
+        setStep("레퍼런스 이미지를 올리고 있어요");
+        try {
+          const ref = await uploadImage(
+            logId,
+            {
+              blob: prompt.extracted.file,
+              width: prompt.extracted.width,
+              height: prompt.extracted.height,
+              previewUrl: prompt.extracted.previewUrl,
+            },
+            { role: "reference" },
+          );
+          referenceImageId = ref.id;
+        } catch {
+          console.warn("[aikit] 레퍼런스 이미지를 올리지 못했습니다 — 계속 진행합니다");
+        }
+      }
+
       for (let i = 0; i < photos.length; i += 1) {
         setStep(`사진을 올리고 있어요 ${i + 1}/${photos.length}`);
         await uploadImage(logId, photos[i], { role: "input" });
@@ -71,6 +96,7 @@ export default function NewLogPage() {
                 baseText: prompt.extracted.body,
                 baseTitle: prompt.title,
                 baseMood: prompt.mood,
+                referenceImageId,
                 request: wish,
                 ratio,
               }

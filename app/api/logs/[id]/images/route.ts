@@ -13,7 +13,7 @@ import { getLogImageModel, type LogImageRole } from "@/models/LogImage";
  *
  * `multipart/form-data`
  *   file           이미지 한 장
- *   role           input | output
+ *   role           input | output | reference
  *   promptVersion  output 일 때, 몇 번 프롬프트로 만들었는지
  *   width · height 화면이 리사이즈하며 안 값
  *
@@ -54,7 +54,9 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     if (!(file instanceof File)) return badRequest("이미지를 넣어 주세요.");
 
     const role = String(form.get("role") ?? "input") as LogImageRole;
-    if (role !== "input" && role !== "output") return badRequest("role 이 이상해요.");
+    if (role !== "input" && role !== "output" && role !== "reference") {
+      return badRequest("role 이 이상해요.");
+    }
 
     if (!isAllowedType(file.type)) {
       return badRequest("JPEG · PNG · WebP 만 올릴 수 있어요.");

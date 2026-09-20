@@ -98,6 +98,8 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
           baseTitle: p.baseTitle || (b ? b.titleKo || b.title || b.slug : ""),
           /* 뽑아낸 본문은 보여 준다 — 어디에도 다시 찾을 곳이 없다 */
           baseText: p.baseSource === "image" ? p.baseText : "",
+          /* 무엇을 보고 만들었는지. 지운 이미지를 가리킬 수 있으니 화면이 감당한다 */
+          referenceImageId: p.referenceImageId ? String(p.referenceImageId) : null,
           base: b
             ? {
                 id: String(b._id),

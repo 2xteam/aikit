@@ -26,7 +26,12 @@ import { DEFAULT_RATIO, isRatioId, moodLabel, type RatioId } from "@/lib/prompts
  * (모델에 보내는 내용은 여전히 대화다 → app/api/logs/[id]/prompts/route.ts)
  */
 
-type Img = { id: string; role: "input" | "output"; promptVersion: number | null; order: number };
+type Img = {
+  id: string;
+  role: "input" | "output" | "reference";
+  promptVersion: number | null;
+  order: number;
+};
 type Prompt = {
   id: string;
   version: number;
@@ -38,6 +43,11 @@ type Prompt = {
   ratio: string;
   parentVersion: number | null;
   createdAt: string;
+  baseSource: "library" | "image";
+  baseTitle: string;
+  baseText: string;
+  /** 분위기를 뽑는 데 쓴 레퍼런스 이미지. 지웠으면 null */
+  referenceImageId: string | null;
   /** 고른 기초 프롬프트. 라이브러리에서 내려갔으면 null */
   base: {
     id: string;
@@ -86,6 +96,7 @@ export default function LogDetailPage() {
 
   const inputs = data.images.filter((i) => i.role === "input");
   const outputs = data.images.filter((i) => i.role === "output");
+  const references = data.images.filter((i) => i.role === "reference");
   const latest = data.prompts[data.prompts.length - 1] ?? null;
 
   async function removeLog() {
@@ -113,8 +124,28 @@ export default function LogDetailPage() {
         <p style={darkMetaStyle}>
           {latest ? `${moodLabel(latest.mood)} · ${latest.ratio} · 프롬프트 ${latest.version}개` : "—"}
           {` · 사진 ${inputs.length}장 · 결과 ${outputs.length}장`}
+          {references.length ? ` · 레퍼런스 ${references.length}장` : ""}
         </p>
       </Sheet>
+
+      {/* ── 분위기를 뽑은 레퍼런스 ── */}
+      {references.length > 0 ? (
+        <Sheet eyebrow="REFERENCE" headline="이 느낌을 보고 만들었어요">
+          <p className="lead">
+            분위기를 뽑는 데 쓴 이미지예요. 결과물이 아니라 <strong>참고한 것</strong>이라
+            목록의 대표 그림으로는 쓰지 않아요.
+          </p>
+          <div style={stripStyle}>
+            {references.map((im) => (
+              <figure key={im.id} style={figStyle}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={`/api/img/${im.id}`} alt="" style={imgStyle} loading="lazy" />
+                <figcaption style={capStyle}>레퍼런스</figcaption>
+              </figure>
+            ))}
+          </div>
+        </Sheet>
+      ) : null}
 
       {/* ── 넣은 사진 ── */}
       <Sheet eyebrow="INPUT" headline="넣은 사진">
@@ -205,9 +236,17 @@ function PromptCard({ prompt, isLatest }: { prompt: Prompt; isLatest: boolean })
         두 달 뒤에 열었을 때 **무엇을 골랐고 내가 뭐라고 했는지**가 남아 있어야 한다.
         그게 없으면 프롬프트 본문만 남아 왜 이렇게 됐는지 알 수 없다.
       */}
-      {prompt.base || prompt.moodKo ? (
+      {prompt.baseTitle || prompt.base || prompt.moodKo ? (
         <div style={baseStyle}>
-          {prompt.base?.thumb ? (
+          {/*
+            썸네일은 두 갈래다 —
+              library  라이브러리 프롬프트의 예시 이미지 (원본 URL 핫링크)
+              image    **내가 올린 레퍼런스** — 앱 라우트가 스트리밍한다
+          */}
+          {prompt.referenceImageId ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={`/api/img/${prompt.referenceImageId}`} alt="" style={baseThumbStyle} loading="lazy" />
+          ) : prompt.base?.thumb ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={prompt.base.thumb}
@@ -222,9 +261,11 @@ function PromptCard({ prompt, isLatest }: { prompt: Prompt; isLatest: boolean })
             </span>
           )}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <span style={baseTagStyle}>고른 프롬프트</span>
+            <span style={baseTagStyle}>
+              {prompt.baseSource === "image" ? "내 이미지에서 뽑음" : "고른 프롬프트"}
+            </span>
             <strong style={baseTitleStyle}>
-              {prompt.base?.title ?? "라이브러리에서 내려간 프롬프트"}
+              {prompt.baseTitle || prompt.base?.title || "라이브러리에서 내려간 프롬프트"}
             </strong>
             <p style={baseMetaStyle}>
               {prompt.moodKo}
@@ -233,6 +274,14 @@ function PromptCard({ prompt, isLatest }: { prompt: Prompt; isLatest: boolean })
             </p>
           </div>
         </div>
+      ) : null}
+
+      {/* 뽑아낸 기초는 어디에도 다시 찾을 곳이 없다. 펼쳐 볼 수 있게 둔다 */}
+      {prompt.baseText ? (
+        <details style={baseTextStyle}>
+          <summary style={baseTextSummaryStyle}>뽑아낸 분위기 프롬프트 보기</summary>
+          <p style={baseTextBodyStyle}>{prompt.baseText}</p>
+        </details>
       ) : null}
 
       {prompt.request ? (
@@ -551,6 +600,23 @@ const baseMetaStyle: CSSProperties = {
   lineHeight: 1.5,
   color: "var(--text-secondary)",
   wordBreak: "break-all",
+};
+const baseTextStyle: CSSProperties = {
+  fontSize: "0.74rem",
+  color: "var(--text-secondary)",
+};
+const baseTextSummaryStyle: CSSProperties = {
+  cursor: "pointer",
+  fontWeight: 700,
+  color: "var(--accent-ink)",
+};
+const baseTextBodyStyle: CSSProperties = {
+  margin: "8px 0 0",
+  padding: 10,
+  lineHeight: 1.75,
+  background: "var(--bg-secondary)",
+  borderRadius: 7,
+  wordBreak: "keep-all",
 };
 const requestStyle: CSSProperties = {
   margin: 0,
