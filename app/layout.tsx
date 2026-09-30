@@ -4,6 +4,7 @@ import "./globals.css";
 // .sheet { border-radius: var(--radius-lg) } 를 이겨야 한다.
 // 생성 파일이다: myjane/design/elements.css → npm run elements -- --write
 import "./elements.css";
+import { ImpersonationBar } from "@/components/ImpersonationBar";
 
 export const metadata: Metadata = {
   title: "AIKit",
@@ -70,7 +71,11 @@ export default function RootLayout({
         />
         <meta name="apple-mobile-web-app-title" content="AIKit" />
       </head>
-      <body>{children}</body>
+      <body>
+        {/* 관리자 대리 로그인 경고 바 — 대리 세션일 때만 맨 위에 고정된다 → components/ImpersonationBar.tsx */}
+        <ImpersonationBar />
+        {children}
+      </body>
     </html>
   );
 }

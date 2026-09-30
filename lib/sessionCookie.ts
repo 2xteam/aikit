@@ -76,8 +76,12 @@ export function sessionCookieHeaders(req: Request, token: string): string[] {
 export function clearSessionCookieHeaders(req: Request): string[] {
   const domain = cookieDomainFor(req);
   const out: string[] = [];
-  for (const name of [SESSION_COOKIE, SESSION_MARK_COOKIE, SESSION_KEY]) {
-    const httpOnly = name === SESSION_COOKIE;
+  /*
+    관리자 대리 로그인 표지(snap_imp)와 맡겨 둔 관리자 세션(snap_admin_restore)도 지운다.
+    남겨 두면 로그아웃한 뒤에 경고 바가 다시 떠서 관리자 세션을 되돌린다 → myjane/lib/impersonation.ts
+  */
+  for (const name of [SESSION_COOKIE, SESSION_MARK_COOKIE, SESSION_KEY, "snap_imp", "snap_admin_restore"]) {
+    const httpOnly = name === SESSION_COOKIE || name === "snap_admin_restore";
     if (domain) out.push(serialize(name, "", req, { maxAge: 0, httpOnly, domain }));
     out.push(serialize(name, "", req, { maxAge: 0, httpOnly }));
   }
