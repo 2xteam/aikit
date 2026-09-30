@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev -p 3008",
     "dev:https": "next dev --experimental-https -p 3008",
+    "dev:local": "next dev --experimental-https --experimental-https-key ../.local-certs/local.myjane.co.kr-key.pem --experimental-https-cert ../.local-certs/local.myjane.co.kr.pem -p 3008",
     "build": "next build",
     "start": "next start -p 3008",
     "lint": "next lint",

@@ -11,6 +11,13 @@ const nextConfig: NextConfig = {
    * 그 파일을 고쳐 쓴다. 그 쓰기가 돌고 있는 개발 서버를 재시작시키고, 반복되면
    * 응답이 멈춘다. `.next-verify`와 `.next-build` 경로를 tsconfig에 미리 넣어 뒀다.
    */
-  distDir: process.env.NEXT_DIST_DIR || ".next",};
+  distDir: process.env.NEXT_DIST_DIR || ".next",
+  /**
+   * `npm run dev:local` 로 https://local.myjane.co.kr:3008 에서 띄울 때
+   * 운영 로그인 쿠키(.myjane.co.kr)를 그대로 받는다. 그 주소에서 여는
+   * 개발 리소스(HMR 등)를 막지 않도록 허용해 둔다 → 볼트 30-Patterns/개발 서버와 검증 환경.md
+   */
+  allowedDevOrigins: ["local.myjane.co.kr"],
+};
 
 export default nextConfig;
