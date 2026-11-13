@@ -38,7 +38,7 @@ export default function LandingPage() {
             <>
               사진을 올리면
               <br />
-              <span style={{ color: "#ead58c" }}>프롬프트를 만들어 드려요.</span>
+              <span style={{ color: "#feda75" }}>프롬프트를 만들어 드려요.</span>
             </>
           }
           lead="어떤 느낌이면 좋겠는지만 한 줄 적으면 됩니다. 만든 프롬프트와 그걸로 나온 이미지가 한 묶음으로 남아, 두 달 뒤에도 그대로 다시 씁니다."

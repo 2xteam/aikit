@@ -6,8 +6,8 @@
     기하는 짙은 타일 + 게이지 호였는데, AIKit 은 호를 빼고 **사각 프레임**으로
     간다. 가족과 이어지는 것은 남은 셋이다 —
       · 짙은 먹청 타일 (rx 44 · 같은 그라디언트)
-      · 흰 심볼 #eef7f8
-      · 골드 포인트 #e8d18a
+      · 흰 심볼 #ffffff
+      · 골드 포인트 #feda75
     호가 빠진 자리의 밀도는 사각 프레임이 메운다. 실루엣 무게가 가족과 비슷하다.
 
     왜 이 모양인가 —
@@ -29,16 +29,13 @@
     → my-obsidian-vault / 20-Design/앱 공통 UI와 아이콘.md · 10-Projects/AIKit.md
   -->
   <defs>
-    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1" gradientTransform="rotate(15)">
-      <stop offset="0" stop-color="#134450"/>
-      <stop offset="1" stop-color="#071c22"/>
-    </linearGradient>
+    <linearGradient id="tile" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#fa7e1e"/><stop offset=".35" stop-color="#d62976"/><stop offset=".68" stop-color="#962fbf"/><stop offset="1" stop-color="#4f5bd5"/></linearGradient><radialGradient id="tileGlow" cx=".12" cy=".95" r=".55"><stop offset="0" stop-color="#feda75" stop-opacity=".85"/><stop offset="1" stop-color="#feda75" stop-opacity="0"/></radialGradient>
   </defs>
 
-  <rect width="192" height="192" rx="44" fill="url(#tile)"/>
+  <rect width="192" height="192" rx="44" fill="url(#tile)"/><rect width="192" height="192" rx="44" fill="url(#tileGlow)"/>
 
   <!-- 크롭 마크 네 개 — 네 path 를 같은 g 에 두어 획 굵기가 갈라지지 않게 -->
-  <g fill="none" stroke="#eef7f8" stroke-width="14"
+  <g fill="none" stroke="#ffffff" stroke-width="14"
      stroke-linecap="round" stroke-linejoin="round">
     <path d="M42,68 L42,42 L68,42"/>
     <path d="M124,42 L150,42 L150,68"/>
@@ -49,5 +46,5 @@
   <!-- 반짝임 — 프레임 가운데. 흰색이면 프레임과 한 덩어리로 읽힌다 -->
   <path d="M96,64 L107.3,84.7 L128,96 L107.3,107.3 L96,128
            L84.7,107.3 L64,96 L84.7,84.7 Z"
-        fill="#e8d18a"/>
+        fill="#feda75"/>
 </svg>

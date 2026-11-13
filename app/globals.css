@@ -98,7 +98,7 @@ a {
   border-radius: var(--radius-lg);
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
-  box-shadow: 0 18px 44px rgba(6, 34, 40, 0.08);
+  box-shadow: 0 18px 44px rgba(40, 20, 70, 0.08);
 }
 
 .sheet + .sheet {
@@ -113,8 +113,8 @@ a {
 
 .sheet--dark {
   background:
-    radial-gradient(circle at 78% 16%, rgba(95, 184, 201, 0.14), transparent 36%),
-    linear-gradient(150deg, #04161b, #0e3037 65%, #134450);
+    radial-gradient(circle at 78% 16%, rgba(246, 165, 211, 0.14), transparent 36%),
+    linear-gradient(150deg, #120f1c, #1d1330 65%, #2a1238);
   color: #fff;
   border: none;
 }
@@ -136,7 +136,7 @@ a {
 
 /* 어두운 배경의 eyebrow는 금색 */
 .sheet--dark .eyebrow {
-  color: #ead58c;
+  color: #feda75;
 }
 
 .headline {
@@ -164,7 +164,7 @@ a {
 }
 
 .sheet--dark .lead {
-  color: rgba(230, 244, 246, 0.72);
+  color: rgba(255, 255, 255, 0.72);
 }
 
 /* 상태 알약 배지 */
@@ -187,7 +187,7 @@ a {
 
 .sheet--dark .pill {
   background: rgba(255, 255, 255, 0.12);
-  color: #ead58c;
+  color: #feda75;
 }
 
 /* 버튼 — 네 종류로 고정한다. 새 스타일을 만들기 전에 이걸로 되는지 먼저 본다 */
@@ -207,13 +207,13 @@ a {
 }
 
 .btn--primary {
-  background: linear-gradient(135deg, #14788a, #0d5866);
-  box-shadow: 0 10px 24px rgba(6, 60, 72, 0.18);
+  background: linear-gradient(135deg, #962fbf, #7e24a3);
+  box-shadow: 0 10px 24px rgba(214, 41, 118, 0.18);
   color: var(--on-accent);
 }
 
 .btn--gold {
-  background: linear-gradient(135deg, #e8c96a, #c9a84c);
+  background: linear-gradient(135deg, #feda75, #fa7e1e);
   color: #2a1c00;
 }
 
@@ -225,7 +225,7 @@ a {
 
 .sheet--dark .btn--ghost {
   background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(150, 205, 216, 0.3);
+  border-color: rgba(255, 255, 255, 0.3);
   color: #fff;
 }
 
@@ -267,7 +267,7 @@ a {
 .tab[aria-selected="true"] {
   background: #fff;
   color: var(--text-primary);
-  box-shadow: 0 4px 15px rgba(6, 34, 40, 0.08);
+  box-shadow: 0 4px 15px rgba(40, 20, 70, 0.08);
 }
 
 
@@ -616,7 +616,7 @@ a {
   border-radius: 14px;
   border: 1px solid var(--border);
   background: var(--bg-card);
-  box-shadow: 0 18px 40px rgba(6, 34, 40, 0.18);
+  box-shadow: 0 18px 40px rgba(40, 20, 70, 0.18);
   z-index: 60;
   display: grid;
   gap: 2px;
@@ -687,15 +687,15 @@ a {
 /*
  * jane 은 myjane 브랜드 색이다.
  *
- * ⚠️ 이 워드마크는 **항상 어두운 푸터 위에** 있다 (배경이 #061a1f 리터럴이라
- * 앱 테마와 무관하다). 그래서 밝은 면용 먹청(#116271)이 아니라 짙은 면용
+ * ⚠️ 이 워드마크는 **항상 어두운 푸터 위에** 있다 (배경이 #120f1c 리터럴이라
+ * 앱 테마와 무관하다). 그래서 밝은 면용 먹청(#962fbf)이 아니라 짙은 면용
  * 값을 쓴다 — 밝은 값으로는 2.56:1 이다.
  *
  * 원래 규칙이 둘로 나뉘어 있었고 밝은 값이 뒤에서 이기고 있었다.
  * 보라 시절에도 3.32:1 로 미달이었다. 한 줄로 합친다.
  */
 .myjane-mark > span {
-  color: #5fb8c9;
+  color: #f6a5d3;
 }
 
 /* ── 소개 페이지 레이아웃 ──
@@ -810,7 +810,7 @@ a {
 .play-progress-fill {
   height: 100%;
   border-radius: 999px;
-  background: #e8d18a;
+  background: #feda75;
   transition: width 240ms cubic-bezier(0.2, 0.72, 0.2, 1);
 }
 
@@ -819,7 +819,7 @@ a {
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 1px;
-  color: rgba(230, 244, 246, 0.6);
+  color: rgba(255, 255, 255, 0.6);
 }
 
 /**
@@ -833,7 +833,7 @@ a {
   width: 100%;
   min-height: 56px;
   padding: 14px 18px;
-  border: 1px solid rgba(150, 205, 216, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.28);
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.06);
   color: #fff;
@@ -852,8 +852,8 @@ a {
 }
 
 .play-option[data-chosen="true"] {
-  background: rgba(232, 209, 138, 0.16);
-  border-color: #e8d18a;
+  background: rgba(254, 218, 117, 0.16);
+  border-color: #feda75;
 }
 
 .play-option:disabled {
@@ -866,7 +866,7 @@ a {
   margin: 20px 0 0;
   font-size: 0.95rem;
   line-height: 1.85;
-  color: rgba(230, 244, 246, 0.9);
+  color: rgba(255, 255, 255, 0.9);
   word-break: keep-all;
 }
 
@@ -1036,7 +1036,7 @@ a {
 }
 
 .timeline-row:hover {
-  border-color: rgba(17, 98, 113, 0.3);
+  border-color: rgba(150, 47, 191, 0.3);
   transform: translateY(-1px);
 }
 
@@ -1159,7 +1159,7 @@ a {
 }
 
 .chip:hover:not(:disabled) {
-  border-color: rgba(17, 98, 113, 0.3);
+  border-color: rgba(150, 47, 191, 0.3);
 }
 
 .chip[aria-pressed="true"] {
@@ -1175,7 +1175,7 @@ a {
 }
 
 .pill--age {
-  border-color: rgba(17, 98, 113, 0.28);
+  border-color: rgba(150, 47, 191, 0.28);
   background: var(--accent-subtle);
   color: var(--accent);
 }
